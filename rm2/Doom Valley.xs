@@ -1,3 +1,33 @@
+float midCliffSize = 0.0;
+float evenTeamCounter = 0.0;
+float oddTeamCounter = 0.0;
+
+int numOfOddTeams=0;
+int numOfEvenTeams=0;
+
+int numOfOddPlayers=0;
+int numOfEvenPlayers=0;
+
+int sizeL=0;
+int sizeW=0;
+
+void SetNumOfPlayersOddAndEven()
+{
+   for(teamNum=0; < cNumberTeams)
+   {
+      bool isOddTeam = teamNum % 2 == 0;
+      
+      if(isOddTeam)
+      {
+         numOfOddPlayers = numOfOddPlayers + rmGetNumberPlayersOnTeam(teamNum);
+      }
+      else
+      {
+         numOfEvenPlayers = numOfEvenPlayers + rmGetNumberPlayersOnTeam(teamNum);
+      }    
+   }
+}
+
 void createCliffsideArea(int areaId=0, int constraint=0, float height=0.0) 
 {      
    rmSetAreaSize(areaId, 1.0, 10000);
@@ -6,7 +36,7 @@ void createCliffsideArea(int areaId=0, int constraint=0, float height=0.0)
    rmSetAreaMinBlobDistance(areaId, 0.0);
    rmSetAreaMaxBlobDistance(areaId, 0.0);
    rmSetAreaCoherence(areaId, 0.0);
-   rmSetAreaCliffType(areaId, "Jungle");
+   rmSetAreaCliffType(areaId, "Egyptian");
    rmSetAreaCliffEdge(areaId, 1.0, 1.0, 0.0, 1.0, 0);
    rmSetAreaCliffPainting(areaId, false, true, true, 1.5, true);
    rmSetAreaCliffHeight(areaId, -1.0, 0.0, 0.5);
@@ -14,26 +44,119 @@ void createCliffsideArea(int areaId=0, int constraint=0, float height=0.0)
    rmAddAreaConstraint(areaId, constraint);
 }
 
+void createTeamCliffArea()
+{
+   for(teamNum=0; < cNumberTeams)
+   {
+      int areaId = rmCreateArea("team"+teamNum);
+
+      bool isOddTeam = teamNum % 2 == 0;
+      int numPlayersOnTeam = rmGetNumberPlayersOnTeam(teamNum);    
+      int teamSize = 15 + (numPlayersOnTeam * 15);
+      int teamSpacing = 15;
+
+      float x1Location = 0.0;
+      float x2Location = 0.0;
+      float z1Location = 0.0;
+      float z2Location = 0.0;
+
+      int teamLength = 30;
+      
+      float xBorderMod = rmXTilesToFraction(2);
+      float zBorderMod = rmZTilesToFraction(2);
+
+      if(isOddTeam)
+      {
+         float zTeamSize = rmZTilesToFraction(teamSize);
+         float zTeamSpacing = rmZTilesToFraction(teamSpacing);
+         float xTeamLength = rmXTilesToFraction(teamLength);
+
+         x1Location = 1.0;
+         z1Location = oddTeamCounter; 
+         x2Location = 1.0 - xTeamLength;
+         z2Location = z1Location - zTeamSize;
+
+         oddTeamCounter = z2Location - zTeamSpacing;
+      }
+      else
+      {
+         float xTeamSize = rmXTilesToFraction(teamSize);
+         float xTeamSpacing = rmXTilesToFraction(teamSpacing);
+         float zTeamLength = rmZTilesToFraction(teamLength);
+
+         x1Location = evenTeamCounter; 
+         z1Location = 1.0;
+         x2Location = x1Location - xTeamSize;
+         z2Location = 1.0 - zTeamLength;
+
+         evenTeamCounter = x2Location - xTeamSpacing;
+      }
+
+      int areaConstraint =  rmCreateBoxConstraint(
+         "teamCliffConstraint"+teamNum, 
+         x1Location, 
+         z1Location, 
+         x2Location, 
+         z2Location);
+
+      rmSetTeamArea(teamNum, areaId);
+      rmSetAreaSize(areaId, 1.0, 10000);
+      rmSetAreaMinBlobs(areaId, 1);
+      rmSetAreaMaxBlobs(areaId, 1);
+      rmSetAreaMinBlobDistance(areaId, 0.0);
+      rmSetAreaMaxBlobDistance(areaId, 0.0);
+      rmSetAreaCoherence(areaId, 0.0);
+      rmSetAreaCliffType(areaId, "Egyptian");
+      rmSetAreaCliffEdge(areaId, 1.0, 1.0, 0.0, 1.0, 0);
+      rmSetAreaCliffPainting(areaId, false, true, true, 1.5, true);
+      rmSetAreaCliffHeight(areaId, -1.0, 0.0, 0.5);
+      rmSetAreaBaseHeight(areaId, 20.0);
+      rmAddAreaConstraint(areaId, areaConstraint);
+      rmSetAreaLocTeam(areaId, teamNum);
+      rmSetTeamArea(teamNum, areaId);
+      rmBuildAllAreas();
+
+      rmSetPlacementTeam(teamNum);
+      rmSetPlayerPlacementArea(x1Location-xBorderMod, z1Location-zBorderMod, x2Location+xBorderMod, z2Location+zBorderMod);
+      rmPlacePlayersSquare(0.25, 0.0, 0.0);
+      rmBuildAllAreas();
+   }
+
+   // Place Player Settlements
+   int startingSettlementID=rmCreateObjectDef("starting settlement");
+   rmAddObjectDefItem(startingSettlementID, "Settlement Level 1", 1, 0.0);
+   rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
+   rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
+   rmPlaceObjectDefPerPlayer(startingSettlementID, true);
+   rmBuildAllAreas();
+}
+
 void main(void)
 {
    // Set Loading Screen text and percentage
    rmSetStatusText("",0.01);
 
+   // Define Globals
+   numOfEvenTeams = cNumberTeams / 2;
+   numOfOddTeams = numOfEvenTeams + (cNumberTeams % 2);
+
+   SetNumOfPlayersOddAndEven();
+
    // Set Map Size.
-   int sizeL=1.0*sqrt(cNumberNonGaiaPlayers*15000);
-   int sizeW=1.0*sqrt(cNumberNonGaiaPlayers*15000);
-   rmSetMapSize(sizeL, sizeW);
+   sizeL = 40 + (cNumberTeams * 40) + (cNumberPlayers * 30);
+
+   rmSetMapSize(sizeL, sizeL);
+
+   midCliffSize = 1.0-rmXTilesToFraction(40);
+   evenTeamCounter = midCliffSize;
+   oddTeamCounter = midCliffSize;
 
    // Init map
    rmSetSeaLevel(1);
-   rmTerrainInitialize("JungleA");
+   rmTerrainInitialize("SandDirt50");
 
    // -------------Define constraints
    rmSetStatusText("",0.10);
-
-   // Create a edge of map constraint. 
-   // rmXTilesToFraction(2) = 2 units away from map x origin point (aka placed at 2% of the maps X)
-   // 1-rmZTilesToFraction(2) = 2 units away from map x end point (aka placed at 98% of the maps X)
 
    int edgeConstraint = rmCreateBoxConstraint("edge of map", rmXTilesToFraction(2), rmZTilesToFraction(2), 1.0-rmXTilesToFraction(2), 1.0-rmZTilesToFraction(2));
    int lakeConstraint = rmCreateBoxConstraint("lake constraint", rmXTilesToFraction(0), 0.35-rmZTilesToFraction(0), 0.4-rmXTilesToFraction(0), 0.65-rmZTilesToFraction(0));
@@ -42,34 +165,27 @@ void main(void)
 
    int cliffsideBackMidConstraint =  rmCreateBoxConstraint(
       "cliffsideBackMidConstraint", 
-      1.0-rmXTilesToFraction(0), 
-      1.0-rmZTilesToFraction(0), 
-      0.8-rmXTilesToFraction(0), 
-      0.8-rmZTilesToFraction(0));
+      1.0, 
+      1.0, 
+      midCliffSize, 
+      midCliffSize);
 
    int cliffsideBackLeftConstraint =  rmCreateBoxConstraint(
       "cliffsideBackLeftConstraint", 
-      0.2-rmXTilesToFraction(0), 
-      1.0-rmZTilesToFraction(0), 
-      0.8-rmXTilesToFraction(0), 
-      0.8-rmZTilesToFraction(0));
+      0.0, 
+      1.0, 
+      midCliffSize, 
+      1.0-rmZTilesToFraction(40)); 
 
    int cliffsideBackRightConstraint =  rmCreateBoxConstraint(
       "cliffsideBackRightConstraint", 
-      1.0-rmXTilesToFraction(0), 
-      0.2-rmZTilesToFraction(0), 
-      0.8-rmXTilesToFraction(0), 
-      0.8-rmZTilesToFraction(0));
+      1.0, 
+      0.0, 
+      1.0-rmXTilesToFraction(40), 
+      midCliffSize);
 
    // -------------Define objects
    rmSetStatusText("",0.20);
-
-   // Starting Settlements 
-
-   int startingSettlementID=rmCreateObjectDef("starting settlement");
-   rmAddObjectDefItem(startingSettlementID, "Settlement Level 1", 1, 0.0);
-   rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
-   rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
 
    // -------------Done defining objects
 
@@ -103,58 +219,12 @@ void main(void)
    int rightCliffArea = rmCreateArea("rightCliff");
    int midCliffArea = rmCreateArea("midCliff");
 
-   rmSetTeamArea(0, leftCliffArea);
-   rmSetTeamArea(1, rightCliffArea);
-
-   createCliffsideArea(leftCliffArea, cliffsideBackLeftConstraint, 14.0);
-   createCliffsideArea(rightCliffArea, cliffsideBackRightConstraint, 14.0);
-   createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, 20.0);
-
-   rmSetAreaLocTeam(leftCliffArea, 0);
-   rmSetAreaLocTeam(rightCliffArea, 1);
-   
+   createCliffsideArea(leftCliffArea, cliffsideBackLeftConstraint, 10.0);
+   createCliffsideArea(rightCliffArea, cliffsideBackRightConstraint, 10.0);
+   createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, 25.0);
    rmBuildAllAreas();
 
-   // Place Players in their lines    
-   // We don't know the player order or if there is an equal number
-   //    of players on each team. 
-   // Therefore we need to keep a counter running of each player in
-   //    each team that we place so we can make sure we put them in
-   //    the correct x fraction (aka 0.25, 0.5, 0.75 etc).
-
-   int currentTeam1Counter = 1;
-   int currentTeam2Counter = 1;
-
-   for(i=1; <cNumberPlayers)
-   {
-      int teamNum = rmGetPlayerTeam(i);
-      int numPlayersOnTeam = rmGetNumberPlayersOnTeam(teamNum);    
-
-      float teamXFractionMultiplier = 1.0 / (numPlayersOnTeam + 1); 
-      float xLocation = 0.0;
-      float zLocation = 0.0;
-      
-      if(teamNum == 1)
-      {
-         xLocation = teamXFractionMultiplier * currentTeam2Counter;
-         currentTeam2Counter = currentTeam2Counter + 1;
-         
-         zLocation = rmZTilesToFraction(10);
-      }
-      else
-      {
-         xLocation = teamXFractionMultiplier * currentTeam1Counter;
-         currentTeam1Counter = currentTeam1Counter + 1;
-
-         zLocation = 1.0-rmZTilesToFraction(10);
-      }
-
-      rmPlacePlayer(i, xLocation, zLocation);
-   }   
-   rmBuildAllAreas();
-
-   // Place starting settlements.
-   rmPlaceObjectDefPerPlayer(startingSettlementID, true);
+   createTeamCliffArea();   
    
    // Set loading bar to 100%
    rmSetStatusText("",1.0);
