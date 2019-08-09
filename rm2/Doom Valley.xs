@@ -1,5 +1,5 @@
 // waterfall Tiles
-int cliffSizeTiles = 40;
+int cliffSizeTiles = 30;
 
 // Waterfall Fractions
 float midCliffSize = 0.0;
@@ -69,6 +69,7 @@ void createCliffLayer(int areaId=0, int areaConstraint=0, float baseHeight=0.0)
    rmSetAreaMinBlobDistance(areaId, 0.0);
    rmSetAreaMaxBlobDistance(areaId, 0.0);
    rmSetAreaCoherence(areaId, 0.0);
+   rmSetAreaTerrainType(areaId, "SandA");
    rmSetAreaCliffType(areaId, "Egyptian");
    rmSetAreaCliffEdge(areaId, 1.0, 1.0, 0.0, 1.0, 0);
    rmSetAreaCliffPainting(areaId, true, true, true, 1.5, true);
@@ -98,11 +99,11 @@ void createTeamCliffArea()
          float xTeamLength = rmXTilesToFraction(teamLengthTiles);
 
          x1Location = 1.0;
-         z1Location = oddTeamCounter; 
+         z1Location = oddTeamCounter - zTeamSpacing; 
          x2Location = 1.0 - xTeamLength;
          z2Location = z1Location - zTeamSize;
 
-         oddTeamCounter = z2Location - zTeamSpacing;
+         oddTeamCounter = z2Location;
       }
       else
       {
@@ -110,12 +111,12 @@ void createTeamCliffArea()
          float xTeamSpacing = rmXTilesToFraction(teamSpacingTiles);
          float zTeamLength = rmZTilesToFraction(teamLengthTiles);
 
-         x1Location = evenTeamCounter; 
+         x1Location = evenTeamCounter - xTeamSpacing; 
          z1Location = 1.0;
          x2Location = x1Location - xTeamSize;
          z2Location = 1.0 - zTeamLength;
 
-         evenTeamCounter = x2Location - xTeamSpacing;
+         evenTeamCounter = x2Location;
       }
 
       int areaConstraint =  rmCreateBoxConstraint(
@@ -264,16 +265,29 @@ void main(void)
 
    // Create the lake
    int centerLake=rmCreateArea("lake in the middle");
-   rmSetAreaSize(centerLake, 0.175, 0.1);
-   rmSetAreaLocation(centerLake, 0.0, 0.5);
-   rmSetAreaWaterType(centerLake, "Marsh Pool");
+   rmSetAreaSize(centerLake, 0.3, 0.3);
+   rmSetAreaLocation(centerLake, 0.0, 0.0);
+   rmSetAreaWaterType(centerLake, "Egyptian Nile");
    rmSetAreaBaseHeight(centerLake, 0.0);
    rmSetAreaMinBlobs(centerLake, 1);
    rmSetAreaMaxBlobs(centerLake, 1);
-   rmSetAreaMinBlobDistance(centerLake, 0.0);
-   rmSetAreaMaxBlobDistance(centerLake, 0.0);
+   rmSetAreaMinBlobDistance(centerLake, 1.0);
+   rmSetAreaMaxBlobDistance(centerLake, 1.0);
    rmSetAreaSmoothDistance(centerLake, 25);
-   rmSetAreaCoherence(centerLake, 1);
+   rmSetAreaCoherence(centerLake, 0);
+   rmBuildAllAreas();
+
+   int waterfallLake=rmCreateArea("lake under the waterfall");
+   rmSetAreaSize(waterfallLake, rmXTilesToFraction(5), rmZTilesToFraction(5));
+   rmSetAreaLocation(waterfallLake, midCliffSize, midCliffSize);
+   rmSetAreaWaterType(waterfallLake, "Egyptian Nile");
+   rmSetAreaBaseHeight(waterfallLake, 0.0);
+   rmSetAreaMinBlobs(waterfallLake, 1);
+   rmSetAreaMaxBlobs(waterfallLake, 1);
+   rmSetAreaMinBlobDistance(waterfallLake, 0.0);
+   rmSetAreaMaxBlobDistance(waterfallLake, 0.0);
+   rmSetAreaSmoothDistance(waterfallLake, 25);
+   rmSetAreaCoherence(waterfallLake, 0);
    rmBuildAllAreas();
 
    // Create the team cliffs
@@ -286,7 +300,47 @@ void main(void)
    createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, 35.0);
    rmBuildAllAreas();
 
-   createTeamCliffArea();   
+   createTeamCliffArea();  
+
+   // Forest.
+   // int classForest=rmDefineClass("forest");
+   // int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
+   // int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", rmClassID("forest"), 15.0);
+   // //int forestSettleConstraint=rmCreateClassDistanceConstraint("forest settle", rmClassID("starting settlement"), 20.0);
+   // int failCount=0;
+   // int numTries=10*cNumberNonGaiaPlayers;
+   // for(i=0; <numTries)
+   // {
+   //    int forestID=rmCreateArea("forest"+i);
+   //    rmSetAreaSize(forestID, rmAreaTilesToFraction(80), rmAreaTilesToFraction(120));
+   //    rmSetAreaWarnFailure(forestID, false);
+   //    rmSetAreaForestType(forestID, "palm forest");
+   //    //rmAddAreaConstraint(forestID, forestSettleConstraint);
+   //    rmAddAreaConstraint(forestID, forestObjConstraint);
+   //    rmAddAreaConstraint(forestID, forestConstraint);
+   //    //rmAddAreaConstraint(forestID, shortAvoidImpassableLand);
+   //    rmAddAreaToClass(forestID, classForest);
+      
+   //    rmSetAreaMinBlobs(forestID, 1);
+   //    rmSetAreaMaxBlobs(forestID, 5);
+   //    rmSetAreaMinBlobDistance(forestID, 16.0);
+   //    rmSetAreaMaxBlobDistance(forestID, 40.0);
+   //    rmSetAreaCoherence(forestID, 0.0);
+
+   //    // Hill trees?
+   //    if(rmRandFloat(0.0, 1.0)<0.2)
+   //       rmSetAreaBaseHeight(forestID, rmRandFloat(3.0, 4.0));
+
+   //    if(rmBuildArea(forestID)==false)
+   //    {
+   //       // Stop trying once we fail 3 times in a row.
+   //       failCount++;
+   //       if(failCount==3)
+   //          break;
+   //    }
+   //    else
+   //       failCount=0;
+   // } 
    
    // Set loading bar to 100%
    rmSetStatusText("",1.0);
