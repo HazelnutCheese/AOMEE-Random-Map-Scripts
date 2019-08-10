@@ -3,19 +3,19 @@ int _waterfallCliffSizeTiles = 60;
 float _waterfallCliffSize = 0.0;
 
 // Layer Constants
-float _firstLayerHeight = 6.0;
-int _firstLayerLengthTiles = 34;
+float _firstLayerHeight = 3.0;
+int _firstLayerLengthTiles = 38;
 
 // Team Constants
-int _teamSpacingTiles = 20;
-float _teamLayerHeight = 14.0;
-int _teamLayerLengthTiles = 26;
+int _teamSpacingTiles = 16;
+float _teamLayerHeight = 6.0;
+int _teamLayerLengthTiles = 28;
 
 // Player Constants
-int _playerSpacingTiles = 10;
-float _playerLayerHeight = 22.0;
+int _playerSpacingTiles = 5;
+float _playerLayerHeight = 10.0;
 int _playerLayerWidthTiles = 16;
-int _playerLayerLengthTiles = 18;
+int _playerLayerLengthTiles = 16;
 
 int numOfOddTeams=0;
 int numOfEvenTeams=0;
@@ -353,7 +353,8 @@ void main(void)
    _waterfallCliffSize = 1.0-rmXTilesToFraction(_waterfallCliffSizeTiles);
 
    // Init map
-   rmSetSeaLevel(1);
+   rmSetSeaType("Egyptian Nile");
+   rmSetSeaLevel(3);
    rmTerrainInitialize("SandDirt50");
 
    // -------------Define constraints
