@@ -2,6 +2,7 @@
 int _waterfallCliffSizeTiles = 60;
 float _waterfallCliffHeight = 10;
 float _waterfallCliffSize = 0.0;
+int _avoidMidCliffConstraint = 0;
 
 // Base Layer Constants
 string _baseLayerFloorTexture="PlainDirt25";
@@ -213,8 +214,8 @@ float createPlayerCliffArea(int playerNum=0, int teamNum=0, bool isOddTeam=false
    rmSetConnectionCoherence(rampID, 0.0);
    rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _playerLayerFloorTexture);
    rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _playerLayerFloorTexture);
-   rmAddConnectionArea(rampID, rmAreaID("player"+playerNum));
-   rmAddConnectionArea(rampID, rmAreaID("Player Center Dummy"+playerNum)); 
+   rmAddConnectionArea(rampID, playerAreaId);
+   rmAddConnectionArea(rampID, dummy); 
    rmBuildConnection(rampID);
 
    return(nextPlayerOffset);
@@ -249,10 +250,10 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    float nextTeamOffset=0.0;
    float playerStartOffset=0.0;
 
-   // float rampAimX = 0.0;
-   // float rampAimZ = 0.0;
+   float rampAimX = 0.0;
+   float rampAimZ = 0.0;
 
-   // int rampDistTiles = _firstLayerLengthTiles - _teamLayerLengthTiles + 1;
+   int rampDistTiles = _firstLayerLengthTiles - _teamLayerLengthTiles - 5;
 
    if(isOddTeam)
    {
@@ -267,8 +268,8 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
       nextTeamOffset = z2Location;
       playerStartOffset = z1Location;
 
-      // rampAimX = settlementX - rmXTilesToFraction(rampDistTiles);
-      // rampAimZ = settlementZ;
+      rampAimX = x2Location - rmXTilesToFraction(rampDistTiles);
+      rampAimZ = z1Location - (rmZTilesToFraction(_teamLayerLengthTiles) / 2);
    }
    else
    {
@@ -283,8 +284,8 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
       nextTeamOffset = x2Location;
       playerStartOffset = x1Location;
 
-      // rampAimX = settlementX;
-      // rampAimZ = settlementZ - rmZTilesToFraction(rampDistTiles);
+      rampAimX = x1Location - (rmXTilesToFraction(_teamLayerLengthTiles) / 2);
+      rampAimZ = z2Location - rmZTilesToFraction(rampDistTiles);
    }
 
    int areaConstraint =  rmCreateBoxConstraint(
@@ -299,25 +300,25 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    rmSetTeamArea(teamNum, areaId);
    rmBuildAllAreas();
 
-   // int dummy=rmCreateArea("Team Center Dummy"+teamNum);
-   // rmSetAreaSize(dummy, 0.0025, 0.0025);
-   // rmSetAreaLocation(dummy, rampAimX, rampAimZ);
-   // rmSetAreaCoherence(dummy, 1.0);
-   // rmSetAreaTerrainType(dummy, "DirtA");
-   // rmBuildAllAreas();
+   int dummy=rmCreateArea("Team Center Dummy"+teamNum);
+   rmSetAreaSize(dummy, 0.00025, 0.00025);
+   rmSetAreaLocation(dummy, rampAimX, rampAimZ);
+   rmSetAreaCoherence(dummy, 1.0);
+   //rmSetAreaTerrainType(dummy, "DirtA");
+   rmBuildAllAreas();
 
-   // int rampID=rmCreateConnection("TeamRamp_"+playerNum);
-   // rmAddConnectionToClass(rampID, rmClassID("connection"));
-   // rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-   // rmSetConnectionWidth(rampID, 10, 0);
-   // rmSetConnectionHeightBlend(rampID, 0.1);
-   // rmSetConnectionSmoothDistance(rampID, 1.0);
-   // rmSetConnectionCoherence(rampID, 0.0);
-   // rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _playerLayerFloorTexture);
-   // rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _playerLayerFloorTexture);
-   // rmAddConnectionArea(rampID, rmAreaID("team"+teamNum));
-   // rmAddConnectionArea(rampID, rmAreaID("Team Center Dummy"+teamNum)); 
-   // rmBuildConnection(rampID);
+   int rampID=rmCreateConnection("TeamRamp_"+teamNum);
+   rmAddConnectionToClass(rampID, rmClassID("connection"));
+   rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
+   rmSetConnectionWidth(rampID, 10, 0);
+   rmSetConnectionHeightBlend(rampID, 0.1);
+   rmSetConnectionSmoothDistance(rampID, 1.0);
+   rmSetConnectionCoherence(rampID, 0.0);
+   rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _teamLayerFloorTexture);
+   rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _teamLayerFloorTexture);
+   rmAddConnectionArea(rampID, areaId);
+   rmAddConnectionArea(rampID, dummy); 
+   rmBuildConnection(rampID);
 
    createPlayersCliffArea(teamNum, playerStartOffset);
    
@@ -356,6 +357,11 @@ void createFirstLayers(bool isRight=false)
    float x2 = 0.0;
    float z2 = 0.0;
 
+   float rampAimX = 0.25;
+   float rampAimZ = 0.25;
+
+   int rampDistTiles = _firstLayerLengthTiles - _teamLayerLengthTiles - 5;
+
    if(isRight)
    {
       x1 = 1.0-rmXTilesToFraction(_firstLayerLengthTiles);
@@ -382,6 +388,32 @@ void createFirstLayers(bool isRight=false)
    createCliffLayer(areaId, areaConstraint, _firstLayerHeight, _firstLayerCliffTexture, _firstLayerFloorTexture);
    rmSetAreaLocTeam(areaId, 0);
    rmBuildAllAreas();
+
+   int dummy=rmCreateArea("layerCliff Center Dummy"+isRight);
+   rmSetAreaSize(dummy, 0.00025, 0.00025);
+   rmSetAreaLocation(dummy, rampAimX, rampAimZ);
+   rmSetAreaCoherence(dummy, 1.0);
+   rmSetAreaTerrainType(dummy, "DirtA");
+   rmBuildAllAreas();
+
+   int maxNumberOfBaseConnections = cNumberPlayers/2;
+   for(i=0; <maxNumberOfBaseConnections)
+   {
+      int rampID=rmCreateConnection("layerCliffRamp_"+isRight+i);
+      rmAddConnectionToClass(rampID, rmClassID("connection"));
+      rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
+      rmSetConnectionWidth(rampID, 10, 0);
+      rmSetConnectionHeightBlend(rampID, 0.1);
+      rmSetConnectionSmoothDistance(rampID, 1.0);
+      rmSetConnectionPositionVariance(rampID, -1);
+      rmSetConnectionCoherence(rampID, 0.0);
+      rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _firstLayerFloorTexture);
+      rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _firstLayerFloorTexture);
+      rmAddConnectionArea(rampID, areaId);
+      rmAddConnectionArea(rampID, dummy); 
+      rmAddConnectionConstraint(rampID, _avoidMidCliffConstraint);
+      rmBuildConnection(rampID);
+   }
 }
 
 void main(void)
@@ -512,50 +544,64 @@ void main(void)
    createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, _waterfallCliffHeight);
    rmBuildAllAreas();
 
+   _avoidMidCliffConstraint = rmCreateAreaDistanceConstraint("avoidMidCliff", midCliffArea, 4.0);
+
    // Create Player Cliffs
    createFirstLayers(true);
    createFirstLayers(false);
    createTeamsCliffAreas();  
    
    //Forest.
-   // int classForest=rmDefineClass("forest");
-   // int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
-   // int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", rmClassID("forest"), 15.0);
-   // //int forestSettleConstraint=rmCreateClassDistanceConstraint("forest settle", rmClassID("starting settlement"), 20.0);
-   // int failCount=0;
-   // int numTries=10*cNumberNonGaiaPlayers;
-   // for(i=0; <numTries)
-   // {
-   //    int forestID=rmCreateArea("forest"+i);
-   //    rmSetAreaSize(forestID, rmAreaTilesToFraction(80), rmAreaTilesToFraction(120));
-   //    rmSetAreaWarnFailure(forestID, false);
-   //    rmSetAreaForestType(forestID, "plain forest");
-   //    //rmAddAreaConstraint(forestID, forestSettleConstraint);
-   //    rmAddAreaConstraint(forestID, forestObjConstraint);
-   //    rmAddAreaConstraint(forestID, forestConstraint);
-   //    //rmAddAreaConstraint(forestID, shortAvoidImpassableLand);
-   //    rmAddAreaToClass(forestID, classForest);
+
+   int avoidConnectionsConstraint = rmCreateClassDistanceConstraint(
+      "Avoid Connections", 
+      classConnection, 
+      5.0);
+
+   int shortAvoidImpassableLand=rmCreateTerrainDistanceConstraint(
+      "short avoid impassable land", 
+      "land", 
+      false, 
+      6.0);
+
+   int classForest=rmDefineClass("forest");
+   int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
+   int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", rmClassID("forest"), 15.0);
+   //int forestSettleConstraint=rmCreateClassDistanceConstraint("forest settle", rmClassID("starting settlement"), 20.0);
+   int failCount=0;
+   int numTries=10*cNumberNonGaiaPlayers;
+   for(i=0; <numTries)
+   {
+      int forestID=rmCreateArea("forest"+i);
+      rmSetAreaSize(forestID, rmAreaTilesToFraction(80), rmAreaTilesToFraction(120));
+      rmSetAreaWarnFailure(forestID, false);
+      rmSetAreaForestType(forestID, "plain forest");
+      rmAddAreaConstraint(forestID, avoidConnectionsConstraint);
+      rmAddAreaConstraint(forestID, forestObjConstraint);
+      rmAddAreaConstraint(forestID, forestConstraint);
+      rmAddAreaConstraint(forestID, shortAvoidImpassableLand);
+      rmAddAreaToClass(forestID, classForest);
       
-   //    rmSetAreaMinBlobs(forestID, 1);
-   //    rmSetAreaMaxBlobs(forestID, 5);
-   //    rmSetAreaMinBlobDistance(forestID, 16.0);
-   //    rmSetAreaMaxBlobDistance(forestID, 40.0);
-   //    rmSetAreaCoherence(forestID, 0.0);
+      rmSetAreaMinBlobs(forestID, 1);
+      rmSetAreaMaxBlobs(forestID, 5);
+      rmSetAreaMinBlobDistance(forestID, 16.0);
+      rmSetAreaMaxBlobDistance(forestID, 40.0);
+      rmSetAreaCoherence(forestID, 0.0);
 
-   //    // // Hill trees?
-   //    // if(rmRandFloat(0.0, 1.0)<0.2)
-   //    //    rmSetAreaBaseHeight(forestID, rmRandFloat(3.0, 4.0));
+      // // Hill trees?
+      // if(rmRandFloat(0.0, 1.0)<0.2)
+      //    rmSetAreaBaseHeight(forestID, rmRandFloat(3.0, 4.0));
 
-   //    if(rmBuildArea(forestID)==false)
-   //    {
-   //       // Stop trying once we fail 3 times in a row.
-   //       failCount++;
-   //       if(failCount==3)
-   //          break;
-   //    }
-   //    else
-   //       failCount=0;
-   // } 
+      if(rmBuildArea(forestID)==false)
+      {
+         // Stop trying once we fail 3 times in a row.
+         failCount++;
+         if(failCount==3)
+            break;
+      }
+      else
+         failCount=0;
+   } 
    
    // Set loading bar to 100%
    rmSetStatusText("",1.0);
