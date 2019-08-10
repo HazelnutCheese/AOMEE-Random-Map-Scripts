@@ -1,8 +1,13 @@
 // Waterfall constants
-int _waterfallCliffSizeTiles = 60;
+int _waterfallCliffSizeTiles = 80;
 float _waterfallCliffHeight = 10;
 float _waterfallCliffSize = 0.0;
 int _avoidMidCliffConstraint = 0;
+
+// River Top Pool
+int _riverTopPoolTilesX = 10;
+int _riverTopPoolTilesZ = 10;
+string _riverType="Egyptian Nile";
 
 // Base Layer Constants
 string _baseLayerFloorTexture="PlainDirt25";
@@ -14,28 +19,19 @@ string _firstLayerFloorTexture="PlainDirt50";
 string _firstLayerCliffTexture="Plain";
 
 // Team Constants
-int _teamSpacingTiles = 16;
+int _teamSpacingTiles = 24;
 float _teamLayerHeight = 6.0;
-int _teamLayerLengthTiles = 28;
+int _teamLayerLengthTiles = 30;
 string _teamLayerFloorTexture="PlainDirt75";
 string _teamLayerCliffTexture="Plain";
 
 // Player Constants
-int _playerSpacingTiles = 5;
+int _playerSpacingTiles = 10;
 float _playerLayerHeight = 10.0;
 int _playerLayerWidthTiles = 16;
 int _playerLayerLengthTiles = 16;
 string _playerLayerFloorTexture="PlainRoadA";
 string _playerLayerCliffTexture="Plain";
-
-// Ramps
-int _rampsId = 0;
-
-int numOfOddTeams=0;
-int numOfEvenTeams=0;
-
-int numOfOddPlayers=0;
-int numOfEvenPlayers=0;
 
 int sizeL=0;
 
@@ -78,23 +74,6 @@ float getSizeOfTeam(int teamNum=0)
    else
    {
       return(rmXTilesToFraction(tiles));
-   }
-}
-
-void SetNumOfPlayersOddAndEven()
-{
-   for(teamNum=0; < cNumberTeams)
-   {
-      bool isOddTeam = getIsOddTeam(teamNum);
-      
-      if(isOddTeam)
-      {
-         numOfOddPlayers = numOfOddPlayers + rmGetNumberPlayersOnTeam(teamNum);
-      }
-      else
-      {
-         numOfEvenPlayers = numOfEvenPlayers + rmGetNumberPlayersOnTeam(teamNum);
-      }    
    }
 }
 
@@ -208,7 +187,7 @@ float createPlayerCliffArea(int playerNum=0, int teamNum=0, bool isOddTeam=false
    int rampID=rmCreateConnection("PlayerRamp_"+playerNum);
    rmAddConnectionToClass(rampID, rmClassID("connection"));
    rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-   rmSetConnectionWidth(rampID, 10, 0);
+   rmSetConnectionWidth(rampID, 12, 0);
    rmSetConnectionHeightBlend(rampID, 0.1);
    rmSetConnectionSmoothDistance(rampID, 1.0);
    rmSetConnectionCoherence(rampID, 0.0);
@@ -310,7 +289,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    int rampID=rmCreateConnection("TeamRamp_"+teamNum);
    rmAddConnectionToClass(rampID, rmClassID("connection"));
    rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-   rmSetConnectionWidth(rampID, 10, 0);
+   rmSetConnectionWidth(rampID, 16, 0);
    rmSetConnectionHeightBlend(rampID, 0.1);
    rmSetConnectionSmoothDistance(rampID, 1.0);
    rmSetConnectionCoherence(rampID, 0.0);
@@ -340,14 +319,6 @@ void createTeamsCliffAreas()
          teamOffsetX=createTeamCliffArea(teamNum, teamOffsetX); 
       }
    }
-
-   // Place Player Settlements
-   int startingSettlementID=rmCreateObjectDef("starting settlement");
-   rmAddObjectDefItem(startingSettlementID, "Settlement Level 1", 1, 0.0);
-   rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
-   rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
-   rmPlaceObjectDefPerPlayer(startingSettlementID, true);
-   rmBuildAllAreas();
 }
 
 void createFirstLayers(bool isRight=false)
@@ -402,7 +373,7 @@ void createFirstLayers(bool isRight=false)
       int rampID=rmCreateConnection("layerCliffRamp_"+isRight+i);
       rmAddConnectionToClass(rampID, rmClassID("connection"));
       rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-      rmSetConnectionWidth(rampID, 10, 0);
+      rmSetConnectionWidth(rampID, 16, 0);
       rmSetConnectionHeightBlend(rampID, 0.1);
       rmSetConnectionSmoothDistance(rampID, 1.0);
       rmSetConnectionPositionVariance(rampID, -1);
@@ -411,7 +382,6 @@ void createFirstLayers(bool isRight=false)
       rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _firstLayerFloorTexture);
       rmAddConnectionArea(rampID, areaId);
       rmAddConnectionArea(rampID, dummy); 
-      rmAddConnectionConstraint(rampID, _avoidMidCliffConstraint);
       rmBuildConnection(rampID);
    }
 }
@@ -420,12 +390,6 @@ void main(void)
 {
    // Set Loading Screen text and percentage
    rmSetStatusText("",0.01);
-
-   // Define Globals
-   numOfEvenTeams = cNumberTeams / 2;
-   numOfOddTeams = numOfEvenTeams + (cNumberTeams % 2);
-
-   SetNumOfPlayersOddAndEven();
 
    // Set Map Size.
    float oddSize = _waterfallCliffSizeTiles + 10;
@@ -460,110 +424,160 @@ void main(void)
    _waterfallCliffSize = 1.0-rmXTilesToFraction(_waterfallCliffSizeTiles);
 
    // Init map
-   rmSetSeaType("Egyptian Nile");
-   rmSetSeaLevel(3);
+   rmSetSeaType(_riverType);
+   rmSetSeaLevel(0.0);
    rmTerrainInitialize(_baseLayerFloorTexture);
 
-   // -------------Define constraints
+   // Class Definitions
+   int classConnection=rmDefineClass("connection");
+
+   // Define constraints
    rmSetStatusText("",0.10);
 
    int edgeConstraint = rmCreateBoxConstraint("edge of map", rmXTilesToFraction(2), rmZTilesToFraction(2), 1.0-rmXTilesToFraction(2), 1.0-rmZTilesToFraction(2));
    int lakeConstraint = rmCreateBoxConstraint("lake constraint", rmXTilesToFraction(0), 0.35-rmZTilesToFraction(0), 0.4-rmXTilesToFraction(0), 0.65-rmZTilesToFraction(0));
 
    int stayInCenter= 0;
-
-   int cliffsideBackMidConstraint =  rmCreateBoxConstraint(
-      "cliffsideBackMidConstraint", 
-      1.0, 
-      1.0, 
-      _waterfallCliffSize, 
-      _waterfallCliffSize);
-
-   // -------------Define objects
-   rmSetStatusText("",0.20);
-
-   // -------------Done defining objects
-
-   // -------------Setup Teams
-   rmSetStatusText("",0.30);
-
-   // Set player starting resources
-   for(i=1; <cNumberPlayers)
-   {
-      rmAddPlayerResource(i, "Food", 300);
-      rmAddPlayerResource(i, "Wood", 200);
-      rmAddPlayerResource(i, "Gold", 100);
-   }
-
-   // Create the lake
-   int centerLake=rmCreateArea("lake in the middle");
-   rmSetAreaSize(centerLake, 0.2, 0.2);
-   rmSetAreaLocation(centerLake, 0.0, 0.0);
-   rmSetAreaWaterType(centerLake, "Egyptian Nile");
-   rmSetAreaBaseHeight(centerLake, 0.0);
-   rmSetAreaMinBlobs(centerLake, 1);
-   rmSetAreaMaxBlobs(centerLake, 1);
-   rmSetAreaMinBlobDistance(centerLake, 1.0);
-   rmSetAreaMaxBlobDistance(centerLake, 1.0);
-   rmSetAreaSmoothDistance(centerLake, 25);
-   rmSetAreaCoherence(centerLake, 0);
-   rmBuildAllAreas();
-
-   // Create Connections
-   int classConnection=rmDefineClass("connection");
-	// _rampsId=rmCreateConnection("ramps");
-	// rmSetConnectionType(_rampsId, cConnectAreas, true, 0.70);
-	// rmSetConnectionWidth(_rampsId, 40, 2);
-	// rmSetConnectionHeightBlend(_rampsId, 27.0);
-	// rmSetConnectionSmoothDistance(_rampsId, 33.0);
-	// rmAddConnectionTerrainReplacement(_rampsId, "cliffGreekA", "GrassA");
-	// rmAddConnectionTerrainReplacement(_rampsId, "cliffGreekB", "GrassA");
-	// rmAddConnectionToClass(_rampsId, classConnection);
-
-   // for(i=1; <cNumberPlayers){
-	// 	int tempID=rmCreateArea("TempPlayer"+i);
-	// 	rmSetAreaSize(tempID, 0.04, 0.04);
-	// 	rmAddConnectionArea(_rampsId, tempID);
-	// 	rmSetAreaLocPlayer(tempID, i);
-	// 	rmBuildArea(tempID);
-	// 	//rmAddAreaConstraint(tempID, lakeConstraint);
-	// 	//rmAddAreaConstraint(tempID, edgeConstraint);
-	// 	//rmAddAreaConstraint(tempID, cliffsideBackMidConstraint);
-	// }
-
-
-   //Center dummy, make a connection towards this area
-   // int dummy=rmCreateArea("Center Dummy");
-   // rmSetAreaSize(dummy, 0.001, 0.001); //very small
-   // rmSetAreaLocation(dummy, 0.5, 0.5); //center
-   // rmSetAreaCoherence(dummy, 1.0);
-   // rmBuildArea(dummy);
-
-   // Create Mid City
-   int midCliffArea = rmCreateArea("midCliff");
-   createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, _waterfallCliffHeight);
-   rmBuildAllAreas();
-
-   _avoidMidCliffConstraint = rmCreateAreaDistanceConstraint("avoidMidCliff", midCliffArea, 4.0);
-
-   // Create Player Cliffs
-   createFirstLayers(true);
-   createFirstLayers(false);
-   createTeamsCliffAreas();  
-   
-   //Forest.
-
    int avoidConnectionsConstraint = rmCreateClassDistanceConstraint(
       "Avoid Connections", 
       classConnection, 
-      5.0);
-
+      3.0);
+   int avoidImpassableLand=rmCreateTerrainDistanceConstraint(
+      "avoid impassable land", 
+      "land", 
+      false, 
+      7.0);
    int shortAvoidImpassableLand=rmCreateTerrainDistanceConstraint(
       "short avoid impassable land", 
       "land", 
       false, 
-      6.0);
+      3.0);
+   int nearAvoidImpassableLand=rmCreateTerrainDistanceConstraint(
+      "near avoid impassable land", 
+      "land", 
+      false, 
+      1.0);
+   int avoidAll=rmCreateTypeDistanceConstraint("avoid all", "all", 6.0);
 
+   // Buildings
+   int avoidTower=rmCreateTypeDistanceConstraint("towers avoid towers", "tower", 6.0);
+   int avoidTower2=rmCreateTypeDistanceConstraint("objects avoid towers", "tower", 25.0);
+
+   // Gold
+   int avoidGold=rmCreateTypeDistanceConstraint("avoid gold", "gold", 30.0);
+   int shortAvoidGold=rmCreateTypeDistanceConstraint("short avoid gold", "gold", 10.0);
+
+   // Food
+   int avoidHerdable=rmCreateTypeDistanceConstraint("avoid herdable", "herdable", 20.0);
+   int avoidFood=rmCreateTypeDistanceConstraint("avoid other food sources", "food", 6.0);
+   int avoidFoodFar=rmCreateTypeDistanceConstraint("avoid food by more", "food", 20.0);
+   int avoidPredator=rmCreateTypeDistanceConstraint("avoid predator", "animalPredator", 20.0);
+
+   // River
+   int centerLake=rmCreateArea("lake in the middle");
+   rmSetAreaSize(centerLake, 0.2, 0.2);
+   rmSetAreaLocation(centerLake, 0.0, 0.0);
+   rmSetAreaWaterType(centerLake, _riverType);
+   rmSetAreaBaseHeight(centerLake, 0.0);
+   rmSetAreaMinBlobs(centerLake, 5);
+   rmSetAreaMaxBlobs(centerLake, 15);
+   rmSetAreaMinBlobDistance(centerLake, 1.0);
+   rmSetAreaMaxBlobDistance(centerLake, 40.0);
+   rmSetAreaSmoothDistance(centerLake, 25);
+   rmSetAreaCoherence(centerLake, 0);
+   rmBuildAllAreas();
+
+   int topLake=rmCreateArea("lake at the top");
+   rmSetAreaSize(topLake, rmXTilesToFraction(_riverTopPoolTilesX), rmZTilesToFraction(_riverTopPoolTilesZ));
+   rmSetAreaLocation(topLake, 1.0, 1.0);
+   rmSetAreaWaterType(topLake, _riverType);
+   rmSetAreaBaseHeight(topLake, 0.0);
+   rmSetAreaMinBlobs(topLake, 5);
+   rmSetAreaMaxBlobs(topLake, 15);
+   rmSetAreaMinBlobDistance(topLake, 1.0);
+   rmSetAreaMaxBlobDistance(topLake, 40.0);
+   rmSetAreaSmoothDistance(topLake, 25);
+   rmSetAreaCoherence(topLake, 0);
+   rmAddAreaConstraint(topLake, avoidImpassableLand);
+   rmBuildAllAreas();
+
+   for(riverIteration=0; <20)
+   {
+      int riverC=rmCreateArea("riverC"+riverIteration);
+      rmSetAreaSize(riverC, 0.015, 0.015);
+      rmSetAreaLocation(riverC, 0.05*riverIteration, 0.05*riverIteration);
+      rmSetAreaWaterType(riverC, _riverType);
+      rmSetAreaBaseHeight(riverC, 0.0);
+      rmSetAreaMinBlobs(riverC, 5);
+      rmSetAreaMaxBlobs(riverC, 10);
+      rmSetAreaMinBlobDistance(riverC, 1.0);
+      rmSetAreaMaxBlobDistance(riverC, 5.0);
+      rmSetAreaSmoothDistance(riverC, 25);
+      rmSetAreaCoherence(riverC, 0);
+      rmBuildAllAreas();
+   }
+
+   for(riverCrossingIteration=2; <4)
+   {
+      int dummyLeft=rmCreateArea("riverCrossDummyLeft"+riverCrossingIteration);
+      rmSetAreaSize(dummyLeft, 0.00025, 0.00025);
+      rmSetAreaLocation(dummyLeft, 0.33, 0.33 * riverCrossingIteration);
+      rmSetAreaCoherence(dummyLeft, 1.0);
+      rmBuildAllAreas();
+
+      int dummyRight=rmCreateArea("riverCrossDummyRight"+riverCrossingIteration);
+      rmSetAreaSize(dummyRight, 0.00025, 0.00025);
+      rmSetAreaLocation(dummyRight, 0.33 * riverCrossingIteration, 0.33);
+      rmSetAreaCoherence(dummyRight, 1.0);
+      rmBuildAllAreas();
+
+      int riverCrossID=rmCreateConnection("riverCross"+riverCrossingIteration);
+      rmAddConnectionToClass(riverCrossID, rmClassID("connection"));
+      rmSetConnectionType(riverCrossID, cConnectAreas, true, 1.0);
+      rmSetConnectionWidth(riverCrossID, 4 * (cNumberPlayers / 2), 3);
+      rmSetConnectionHeightBlend(riverCrossID, 1.0);
+      rmSetConnectionSmoothDistance(riverCrossID, 1.0);
+      rmSetConnectionCoherence(riverCrossID, 0.5);
+      rmSetConnectionBaseHeight(riverCrossID, 1.0);
+      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyA", _baseLayerFloorTexture);
+      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyB", _baseLayerFloorTexture);
+      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyC", _baseLayerFloorTexture);
+      rmAddConnectionArea(riverCrossID, dummyLeft);
+      rmAddConnectionArea(riverCrossID, dummyRight); 
+      rmBuildConnection(riverCrossID);
+   }
+
+   // Terrain
+   createFirstLayers(true);
+   createFirstLayers(false);
+   createTeamsCliffAreas();  
+   
+   // Place Player Settlements
+   int startingSettlementID=rmCreateObjectDef("starting settlement");
+   rmAddObjectDefItem(startingSettlementID, "Settlement Level 1", 1, 0.0);
+   rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
+   rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
+   rmPlaceObjectDefPerPlayer(startingSettlementID, true);
+
+   // towers avoid other towers
+   int startingTowerID=rmCreateObjectDef("Starting tower");
+   rmAddObjectDefItem(startingTowerID, "tower", 1, 0.0);
+   rmSetObjectDefMinDistance(startingTowerID, 1.0);
+   rmSetObjectDefMaxDistance(startingTowerID, 8.0);
+   rmAddObjectDefConstraint(startingTowerID, avoidTower);
+   rmAddObjectDefConstraint(startingTowerID, nearAvoidImpassableLand);
+   rmPlaceObjectDefPerPlayer(startingTowerID, true, 4);
+
+   // gold avoids gold
+   int startingGoldID=rmCreateObjectDef("Starting gold");
+   rmAddObjectDefItem(startingGoldID, "Gold mine small", 1, 0.0);
+   rmSetObjectDefMinDistance(startingGoldID, 1.0);
+   rmSetObjectDefMaxDistance(startingGoldID, 16.0);
+   rmAddObjectDefConstraint(startingGoldID, shortAvoidGold);
+   rmAddObjectDefConstraint(startingGoldID, nearAvoidImpassableLand);
+   rmPlaceObjectDefPerPlayer(startingGoldID, true);
+
+   //Forest.
    int classForest=rmDefineClass("forest");
    int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
    int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", rmClassID("forest"), 15.0);
@@ -573,7 +587,7 @@ void main(void)
    for(i=0; <numTries)
    {
       int forestID=rmCreateArea("forest"+i);
-      rmSetAreaSize(forestID, rmAreaTilesToFraction(80), rmAreaTilesToFraction(120));
+      rmSetAreaSize(forestID, rmAreaTilesToFraction(120), rmAreaTilesToFraction(180));
       rmSetAreaWarnFailure(forestID, false);
       rmSetAreaForestType(forestID, "plain forest");
       rmAddAreaConstraint(forestID, avoidConnectionsConstraint);
@@ -588,10 +602,6 @@ void main(void)
       rmSetAreaMaxBlobDistance(forestID, 40.0);
       rmSetAreaCoherence(forestID, 0.0);
 
-      // // Hill trees?
-      // if(rmRandFloat(0.0, 1.0)<0.2)
-      //    rmSetAreaBaseHeight(forestID, rmRandFloat(3.0, 4.0));
-
       if(rmBuildArea(forestID)==false)
       {
          // Stop trying once we fail 3 times in a row.
@@ -602,7 +612,62 @@ void main(void)
       else
          failCount=0;
    } 
+
+   // Fish
+   int fishVsFishID=rmCreateTypeDistanceConstraint("fish v fish", "fish", 22.0);
+   int fishLand = rmCreateTerrainDistanceConstraint("fish land", "land", true, 6.0);
+
+   int fishID=rmCreateObjectDef("fish");
+   rmAddObjectDefItem(fishID, "fish - perch", 3, 9.0);
+   rmSetObjectDefMinDistance(fishID, 0.0);
+   rmSetObjectDefMaxDistance(fishID, 3000);
+   rmAddObjectDefConstraint(fishID, fishVsFishID);
+   rmAddObjectDefConstraint(fishID, fishLand);
+   rmPlaceObjectDefAtLoc(fishID, 0, 0.5, 0.5, 4*cNumberNonGaiaPlayers); 
+
+   //rocks
+   int rockID=rmCreateObjectDef("rock");
+   rmAddObjectDefItem(rockID, "rock sandstone sprite", 1, 0.0);
+   rmSetObjectDefMinDistance(rockID, 0.0);
+   rmSetObjectDefMaxDistance(rockID, 600);
+   rmAddObjectDefConstraint(rockID, avoidAll);
+   rmAddObjectDefConstraint(rockID, shortAvoidImpassableLand);
+   rmPlaceObjectDefAtLoc(rockID, 0, 0.5, 0.5, 30*cNumberNonGaiaPlayers);
+
+   // Bushes
+   int bushID=rmCreateObjectDef("big bush patch");
+   rmAddObjectDefItem(bushID, "bush", 4, 3.0);
+   rmSetObjectDefMinDistance(bushID, 0.0);
+   rmSetObjectDefMaxDistance(bushID, 600);
+   rmAddObjectDefConstraint(bushID, avoidAll);
+   rmPlaceObjectDefAtLoc(bushID, 0, 0.5, 0.5, 5*cNumberNonGaiaPlayers);
+
+   int bush2ID=rmCreateObjectDef("small bush patch");
+   rmAddObjectDefItem(bush2ID, "bush", 3, 2.0);
+   rmAddObjectDefItem(bush2ID, "rock sandstone sprite", 1, 2.0);
+   rmSetObjectDefMinDistance(bush2ID, 0.0);
+   rmSetObjectDefMaxDistance(bush2ID, 600);
+   rmAddObjectDefConstraint(bush2ID, avoidAll);
+   rmPlaceObjectDefAtLoc(bush2ID, 0, 0.5, 0.5, 3*cNumberNonGaiaPlayers);
+
+   int nearRiver=rmCreateTerrainMaxDistanceConstraint("near river", "water", true, 5.0);
+   int riverBushID=rmCreateObjectDef("bushs by river");
+   rmAddObjectDefItem(riverBushID, "bush", 3, 3.0);
+   rmAddObjectDefItem(riverBushID, "grass", 7, 8.0);
+   rmSetObjectDefMinDistance(riverBushID, 0.0);
+   rmSetObjectDefMaxDistance(riverBushID, 600);
+   rmAddObjectDefConstraint(riverBushID, avoidAll);
+   rmAddObjectDefConstraint(riverBushID, nearRiver);
+   rmPlaceObjectDefAtLoc(riverBushID, 0, 0.5, 0.5, 5*cNumberNonGaiaPlayers);
    
+   // Set player starting resources
+   for(i=1; <cNumberPlayers)
+   {
+      rmAddPlayerResource(i, "Food", 300);
+      rmAddPlayerResource(i, "Wood", 200);
+      rmAddPlayerResource(i, "Gold", 100);
+   }
+
    // Set loading bar to 100%
    rmSetStatusText("",1.0);
 }
