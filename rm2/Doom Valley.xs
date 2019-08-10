@@ -1,8 +1,14 @@
-// waterfall Tiles
-int cliffSizeTiles = 30;
-
-// Waterfall Fractions
+// Waterfall constants
+int cliffSizeTiles = 60;
 float midCliffSize = 0.0;
+
+// Layer Constants
+float _firstLayerHeight=5.0;
+float _teamLayerHeight=10.0;
+float _playerLayerHeight=15.0;
+int _firstLayerLengthTiles=26;
+int _teamLayerLengthTiles=22;
+int _playerLayerLengthTiles=18;
 
 // Team Tiles
 int teamSpacingTiles = 15;
@@ -129,7 +135,7 @@ float createPlayerCliffArea(int playerNum=0, bool isOddTeam=false, float offset=
    {
       x1LocationP = 1.0;
       z1LocationP = offset - playerSpacing; 
-      x2LocationP = 1.0 - playerSize;
+      x2LocationP = 1.0 - rmXTilesToFraction(_playerLayerLengthTiles);
       z2LocationP = z1LocationP - playerSize;
 
       nextPlayerOffset = z2LocationP;
@@ -139,7 +145,7 @@ float createPlayerCliffArea(int playerNum=0, bool isOddTeam=false, float offset=
       x1LocationP = offset - playerSpacing; 
       z1LocationP = 1.0;
       x2LocationP = x1LocationP - playerSize;
-      z2LocationP = 1.0 - playerSize;
+      z2LocationP = 1.0 - rmZTilesToFraction(_playerLayerLengthTiles);
 
       nextPlayerOffset = x2LocationP;
    }      
@@ -192,7 +198,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    if(isOddTeam)
    {
       float zTeamSpacing = rmZTilesToFraction(teamSpacingTiles);
-      float xTeamLength = rmXTilesToFraction(teamLengthTiles);
+      float xTeamLength = rmXTilesToFraction(_teamLayerLengthTiles);
 
       x1Location = 1.0;
       z1Location = offset - zTeamSpacing; 
@@ -205,7 +211,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    else
    {
       float xTeamSpacing = rmXTilesToFraction(teamSpacingTiles);
-      float zTeamLength = rmZTilesToFraction(teamLengthTiles);
+      float zTeamLength = rmZTilesToFraction(_teamLayerLengthTiles);
 
       x1Location = offset - xTeamSpacing; 
       z1Location = 1.0;
@@ -255,6 +261,41 @@ void createTeamsCliffAreas()
    rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
    rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
    rmPlaceObjectDefPerPlayer(startingSettlementID, true);
+   rmBuildAllAreas();
+}
+
+void createFirstLayers(bool isRight=false)
+{
+   float x1 = 0.0;
+   float z1 = 0.0;
+   float x2 = 0.0;
+   float z2 = 0.0;
+
+   if(isRight)
+   {
+      x1 = 1.0-rmXTilesToFraction(_firstLayerLengthTiles);
+      z1 = midCliffSize;
+      x2 = 1.0;
+      z2 = 0.0;
+   }
+   else
+   {
+      x1 = midCliffSize;
+      z1 = 1.0-rmZTilesToFraction(_firstLayerLengthTiles);
+      x2 = 0.0;
+      z2 = 1.0;
+   }
+
+   int areaId = rmCreateArea("layerCliff"+isRight);
+   int areaConstraint = rmCreateBoxConstraint(
+      "layerCliffConstraint"+isRight, 
+      x1, 
+      z1, 
+      x2, 
+      z2);
+
+   createCliffLayer(areaId, areaConstraint, _firstLayerHeight);
+   rmSetAreaLocTeam(areaId, 0);
    rmBuildAllAreas();
 }
 
@@ -376,6 +417,8 @@ void main(void)
    createCliffsideArea(midCliffArea, cliffsideBackMidConstraint, 35.0);
    rmBuildAllAreas();
 
+   createFirstLayers(true);
+   createFirstLayers(false);
    createTeamsCliffAreas();  
 
    // Forest.
