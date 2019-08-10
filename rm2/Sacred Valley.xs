@@ -1,3 +1,6 @@
+//Include the library file.
+include "MmM_FE_lib.xs";
+
 // Waterfall constants
 int _waterfallCliffSizeTiles = 80;
 float _waterfallCliffHeight = 10;
@@ -459,13 +462,17 @@ void main(void)
       1.0);
    int avoidAll=rmCreateTypeDistanceConstraint("avoid all", "all", 6.0);
 
+
    // Buildings
+   int avoidBuildings=rmCreateTypeDistanceConstraint("avoid buildings", "Building", 20.0);
    int avoidTower=rmCreateTypeDistanceConstraint("towers avoid towers", "tower", 6.0);
    int avoidTower2=rmCreateTypeDistanceConstraint("objects avoid towers", "tower", 25.0);
+   int shortAvoidSettlement=rmCreateTypeDistanceConstraint("objects avoid TC by short distance", "AbstractSettlement", 20.0);
 
    // Gold
-   int avoidGold=rmCreateTypeDistanceConstraint("avoid gold", "gold", 30.0);
    int shortAvoidGold=rmCreateTypeDistanceConstraint("short avoid gold", "gold", 10.0);
+   int medAvoidGold=rmCreateTypeDistanceConstraint("gold avoid gold", "gold", 40.0);
+	int avoidGold=rmCreateTypeDistanceConstraint("avoid gold", "gold", 60.0);
 
    // Food
    int avoidHerdable=rmCreateTypeDistanceConstraint("avoid herdable", "herdable", 20.0);
@@ -577,6 +584,179 @@ void main(void)
    rmAddObjectDefConstraint(startingGoldID, nearAvoidImpassableLand);
    rmPlaceObjectDefPerPlayer(startingGoldID, true);
 
+   int closeGoatsID=rmCreateObjectDef("close Goats");
+   rmAddObjectDefItem(closeGoatsID, "goat", 2, 2.0);
+   rmSetObjectDefMinDistance(closeGoatsID, 20.0);
+   rmSetObjectDefMaxDistance(closeGoatsID, 25.0);
+   rmAddObjectDefConstraint(closeGoatsID, nearAvoidImpassableLand);
+   rmAddObjectDefConstraint(closeGoatsID, avoidFood);
+   rmPlaceObjectDefPerPlayer(closeGoatsID, true);
+
+   int closeChickensID=rmCreateObjectDef("close Chickens");
+   rmAddObjectDefItem(closeChickensID, "chicken", rmRandInt(5,9), 5.0);
+   rmSetObjectDefMinDistance(closeChickensID, 20.0);
+   rmSetObjectDefMaxDistance(closeChickensID, 25.0);
+   rmAddObjectDefConstraint(closeChickensID, nearAvoidImpassableLand);
+   rmAddObjectDefConstraint(closeChickensID, avoidFood);
+   rmPlaceObjectDefPerPlayer(closeChickensID, true);
+
+   // gold avoids gold and Settlements
+	int mediumGoldID=rmCreateObjectDef("medium gold");
+	rmAddObjectDefItem(mediumGoldID, "Gold mine", 1, 0.0);
+	rmSetObjectDefMinDistance(mediumGoldID, 55.0);
+	rmSetObjectDefMaxDistance(mediumGoldID, 60.0);
+	rmAddObjectDefConstraint(mediumGoldID, medAvoidGold);
+	//rmAddObjectDefConstraint(mediumGoldID, shortPlayerConstraint);
+	rmAddObjectDefConstraint(mediumGoldID, shortAvoidSettlement);
+	rmAddObjectDefConstraint(mediumGoldID, shortAvoidImpassableLand);
+	rmPlaceObjectDefPerPlayer(mediumGoldID, false);
+
+   int farGoldID=rmCreateObjectDef("far gold");
+	rmAddObjectDefItem(farGoldID, "Gold mine", 1, 0.0);
+	rmSetObjectDefMinDistance(farGoldID, 75.0);
+	rmSetObjectDefMaxDistance(farGoldID, 105.0);
+	rmAddObjectDefConstraint(farGoldID, medAvoidGold);
+	rmAddObjectDefConstraint(farGoldID, shortAvoidSettlement);
+	//rmAddObjectDefConstraint(farGoldID, playerConstraint);
+	rmAddObjectDefConstraint(farGoldID, avoidImpassableLand);
+	rmAddObjectDefConstraint(farGoldID, stayInCenter);
+	rmPlaceObjectDefPerPlayer(farGoldID, false, rmRandInt(1, 2));
+
+   //
+   int p = 0;
+   int attempt = 0;
+   int id = 0;
+	int closeID = -1;
+	int farID = -1;
+	
+   int classStartingSet=rmDefineClass("starting settlement");
+
+	int TCavoidSettlement = rmCreateTypeDistanceConstraint("TC avoid TC by long distance", "AbstractSettlement", 75.0);
+	int TCavoidStart = rmCreateClassDistanceConstraint("TC avoid starting by long distance", classStartingSet, 75.0);
+	int TCavoidWater = rmCreateTerrainDistanceConstraint("TC avoid water", "Water", true, 30.0);
+	int TCavoidImpassableLand = rmCreateTerrainDistanceConstraint("TC avoid badlands", "land", false, 18.0);
+	
+	id=rmAddFairLoc("Settlement", false, true,  60, 80, 65, 20);
+	rmAddFairLocConstraint(id, TCavoidSettlement);
+	rmAddFairLocConstraint(id, TCavoidImpassableLand);
+	rmAddFairLocConstraint(id, TCavoidStart);
+	
+	if(rmPlaceFairLocs()) 
+   {
+		for(p = 1; <= cNumberNonGaiaPlayers)
+      {
+         id=rmCreateObjectDef("close settlement"+p);
+         rmAddObjectDefItem(id, "Settlement", 1, 0.0);
+         rmPlaceObjectDefAtLoc(id, p, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0), 1);
+
+         int settleArea = rmCreateArea("settlement area"+p);
+         rmSetAreaLocation(settleArea, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0));
+         rmSetAreaSize(settleArea, 0.015, 0.015);
+         rmBuildArea(settleArea);
+		}
+	} 
+   else 
+   {
+		for(p = 1; <= cNumberNonGaiaPlayers)
+      {
+			closeID=rmCreateObjectDef("close settlement"+p);
+			rmAddObjectDefItem(closeID, "Settlement", 1, 0.0);
+			rmAddObjectDefConstraint(closeID, TCavoidSettlement);
+			rmAddObjectDefConstraint(closeID, TCavoidStart);
+			rmAddObjectDefConstraint(closeID, TCavoidWater);
+			for(attempt = 6; <= 12)
+         {
+				rmPlaceObjectDefAtLoc(closeID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
+				if(rmGetNumberUnitsPlaced(closeID) > 0)
+            {
+					//break;
+				}
+				rmSetObjectDefMaxDistance(closeID, 10*attempt);
+			}
+		}
+	}
+	rmResetFairLocs();
+
+	id=rmAddFairLoc("Settlement", true, false,  80, 100, 65, 20);
+	rmAddFairLocConstraint(id, TCavoidSettlement);
+	rmAddFairLocConstraint(id, TCavoidImpassableLand);
+	rmAddFairLocConstraint(id, TCavoidWater);
+	rmAddFairLocConstraint(id, TCavoidStart);
+	
+	if(rmPlaceFairLocs()) 
+   {
+		for(p = 1; <= cNumberNonGaiaPlayers)
+      {
+			id=rmCreateObjectDef("far settlement"+p);
+			rmAddObjectDefItem(id, "Settlement", 1, 0.0);
+			rmPlaceObjectDefAtLoc(id, p, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0), 1);
+
+			int settlementArea = rmCreateArea("settlement_area_"+p);
+			rmSetAreaLocation(settlementArea, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0));
+			rmSetAreaSize(settlementArea, 0.015, 0.015);	
+			rmBuildArea(settlementArea);
+		}
+	} 
+   else 
+   {
+		farID=rmCreateObjectDef("far settlement"+p);
+		rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
+		rmAddObjectDefConstraint(farID, TCavoidWater);
+		rmAddObjectDefConstraint(farID, TCavoidStart);
+		rmAddObjectDefConstraint(farID, TCavoidSettlement);
+		rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
+		for(attempt = 5; <= 10)
+      {
+			rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
+			if(rmGetNumberUnitsPlaced(farID) > 0)
+         {
+				break;
+			}
+			rmSetObjectDefMaxDistance(farID, 15*attempt);
+		}
+	}
+	rmResetFairLocs();
+		
+	if(cMapSize == 2)
+   {
+		for(p = 1; <= cNumberNonGaiaPlayers)
+      {			
+			farID=rmCreateObjectDef("giant settlement"+p);
+			rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
+			rmAddObjectDefConstraint(farID, TCavoidWater);
+			rmAddObjectDefConstraint(farID, TCavoidStart);
+			rmAddObjectDefConstraint(farID, TCavoidSettlement);
+			rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
+			for(attempt = 5; <= 12)
+         {
+				rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
+				if(rmGetNumberUnitsPlaced(farID) > 0)
+            {
+					break;
+				}
+				rmSetObjectDefMaxDistance(farID, 20*attempt);
+			}
+			
+			farID=rmCreateObjectDef("giant2 settlement"+p);
+			rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
+			rmAddObjectDefConstraint(farID, TCavoidWater);
+			rmAddObjectDefConstraint(farID, TCavoidStart);
+			rmAddObjectDefConstraint(farID, TCavoidSettlement);
+			rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
+			for(attempt = 5; <= 12)
+         {
+				rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
+				if(rmGetNumberUnitsPlaced(farID) > 0)
+            {
+					break;
+				}
+				rmSetObjectDefMaxDistance(farID, 25*attempt);
+			}
+		}
+	}
+
+   //
+ 
    //Forest.
    int classForest=rmDefineClass("forest");
    int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
