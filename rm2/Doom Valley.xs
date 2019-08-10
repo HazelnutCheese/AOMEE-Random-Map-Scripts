@@ -1,26 +1,21 @@
 // Waterfall constants
-int cliffSizeTiles = 60;
-float midCliffSize = 0.0;
+int _waterfallCliffSizeTiles = 60;
+float _waterfallCliffSize = 0.0;
 
 // Layer Constants
-float _firstLayerHeight=5.0;
-float _teamLayerHeight=10.0;
-float _playerLayerHeight=15.0;
-int _firstLayerLengthTiles=26;
-int _teamLayerLengthTiles=22;
-int _playerLayerLengthTiles=18;
+float _firstLayerHeight = 6.0;
+int _firstLayerLengthTiles = 34;
 
-// Team Tiles
-int teamSpacingTiles = 15;
-int teamLengthTiles = 22;
+// Team Constants
+int _teamSpacingTiles = 20;
+float _teamLayerHeight = 14.0;
+int _teamLayerLengthTiles = 26;
 
-// Player Tiles
-int playerSizeTiles = 15;
-int playerSpacingTiles = 5;
-
-// Player Fractions
-float playerSize = 0.0;
-float playerSpacing = 0.0;
+// Player Constants
+int _playerSpacingTiles = 10;
+float _playerLayerHeight = 22.0;
+int _playerLayerWidthTiles = 16;
+int _playerLayerLengthTiles = 18;
 
 int numOfOddTeams=0;
 int numOfEvenTeams=0;
@@ -52,7 +47,7 @@ int getSizeOfTeamTiles(int teamNum=0)
 {
    int numPlayersOnTeam = rmGetNumberPlayersOnTeam(teamNum);  
 
-   int teamSize = playerSpacingTiles + (numPlayersOnTeam * (playerSizeTiles + playerSpacingTiles));
+   int teamSize = _playerSpacingTiles + (numPlayersOnTeam * (_playerLayerWidthTiles + _playerSpacingTiles));
 
    return(teamSize);
 }
@@ -129,23 +124,38 @@ float createPlayerCliffArea(int playerNum=0, bool isOddTeam=false, float offset=
    float x2LocationP = 0.0;
    float z1LocationP = 0.0;
    float z2LocationP = 0.0; 
+
+   float settlementX = 0.0;
+   float settlementY = 0.0;
+
    float nextPlayerOffset=0.0;
+   float playerLayerWidth = 0.0;
 
    if(isOddTeam)
    {
+      playerLayerWidth = rmZTilesToFraction(_playerLayerWidthTiles);
+
       x1LocationP = 1.0;
-      z1LocationP = offset - playerSpacing; 
+      z1LocationP = offset - rmZTilesToFraction(_playerSpacingTiles); 
       x2LocationP = 1.0 - rmXTilesToFraction(_playerLayerLengthTiles);
-      z2LocationP = z1LocationP - playerSize;
+      z2LocationP = z1LocationP - playerLayerWidth;
+
+      settlementX = x1LocationP - (playerLayerWidth/2);
+      settlementY = z1LocationP - (playerLayerWidth/1.75);
 
       nextPlayerOffset = z2LocationP;
    }
    else
    {
-      x1LocationP = offset - playerSpacing; 
+      playerLayerWidth = rmXTilesToFraction(_playerLayerWidthTiles);
+
+      x1LocationP = offset - rmXTilesToFraction(_playerSpacingTiles); 
       z1LocationP = 1.0;
-      x2LocationP = x1LocationP - playerSize;
+      x2LocationP = x1LocationP - playerLayerWidth;
       z2LocationP = 1.0 - rmZTilesToFraction(_playerLayerLengthTiles);
+
+      settlementX = x1LocationP - (playerLayerWidth/1.75);
+      settlementY = z1LocationP - (playerLayerWidth/2);
 
       nextPlayerOffset = x2LocationP;
    }      
@@ -157,8 +167,8 @@ float createPlayerCliffArea(int playerNum=0, bool isOddTeam=false, float offset=
                x2LocationP, 
                z2LocationP);
 
-   rmSetPlayerLocation(playerNum, x1LocationP-(playerSize/2), z1LocationP-(playerSize/2));
-   createCliffLayer(playerAreaId, playerAreaConstraint, 20);
+   rmSetPlayerLocation(playerNum, settlementX, settlementY);
+   createCliffLayer(playerAreaId, playerAreaConstraint, _playerLayerHeight);
    rmSetAreaLocPlayer(playerAreaId, playerNum);
    rmSetPlayerArea(playerNum, playerAreaId);
    rmBuildAllAreas();
@@ -197,7 +207,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
 
    if(isOddTeam)
    {
-      float zTeamSpacing = rmZTilesToFraction(teamSpacingTiles);
+      float zTeamSpacing = rmZTilesToFraction(_teamSpacingTiles);
       float xTeamLength = rmXTilesToFraction(_teamLayerLengthTiles);
 
       x1Location = 1.0;
@@ -210,7 +220,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    }
    else
    {
-      float xTeamSpacing = rmXTilesToFraction(teamSpacingTiles);
+      float xTeamSpacing = rmXTilesToFraction(_teamSpacingTiles);
       float zTeamLength = rmZTilesToFraction(_teamLayerLengthTiles);
 
       x1Location = offset - xTeamSpacing; 
@@ -229,7 +239,7 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
       x2Location, 
       z2Location);
 
-   createCliffLayer(areaId, areaConstraint, 10);
+   createCliffLayer(areaId, areaConstraint, _teamLayerHeight);
    rmSetAreaLocTeam(areaId, teamNum);
    rmSetTeamArea(teamNum, areaId);
    rmBuildAllAreas();
@@ -241,8 +251,8 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
 
 void createTeamsCliffAreas()
 {
-   float teamOffsetX = midCliffSize;
-   float teamOffsetZ = midCliffSize;
+   float teamOffsetX = _waterfallCliffSize;
+   float teamOffsetZ = _waterfallCliffSize;
    for(teamNum=0; < cNumberTeams)
    {  
       if(getIsOddTeam(teamNum))
@@ -274,13 +284,13 @@ void createFirstLayers(bool isRight=false)
    if(isRight)
    {
       x1 = 1.0-rmXTilesToFraction(_firstLayerLengthTiles);
-      z1 = midCliffSize;
+      z1 = _waterfallCliffSize;
       x2 = 1.0;
       z2 = 0.0;
    }
    else
    {
-      x1 = midCliffSize;
+      x1 = _waterfallCliffSize;
       z1 = 1.0-rmZTilesToFraction(_firstLayerLengthTiles);
       x2 = 0.0;
       z2 = 1.0;
@@ -311,8 +321,8 @@ void main(void)
    SetNumOfPlayersOddAndEven();
 
    // Set Map Size.
-   float oddSize = cliffSizeTiles + 10;
-   float evenSize = cliffSizeTiles + 10;
+   float oddSize = _waterfallCliffSizeTiles + 10;
+   float evenSize = _waterfallCliffSizeTiles + 10;
 
    for(teamNum=0; <cNumberTeams)
    {
@@ -321,11 +331,11 @@ void main(void)
 
       if(isOddTeam)
       {
-         oddSize = oddSize + tiles + teamSpacingTiles;
+         oddSize = oddSize + tiles + _teamSpacingTiles;
       }
       else
       {
-         evenSize = evenSize + tiles+ teamSpacingTiles;
+         evenSize = evenSize + tiles+ _teamSpacingTiles;
       }
    }
 
@@ -340,10 +350,7 @@ void main(void)
 
    rmSetMapSize(sizeL, sizeL);
 
-   playerSize = rmZTilesToFraction(playerSizeTiles);
-   playerSpacing = rmZTilesToFraction(playerSpacingTiles);
-
-   midCliffSize = 1.0-rmXTilesToFraction(cliffSizeTiles);
+   _waterfallCliffSize = 1.0-rmXTilesToFraction(_waterfallCliffSizeTiles);
 
    // Init map
    rmSetSeaLevel(1);
@@ -361,8 +368,8 @@ void main(void)
       "cliffsideBackMidConstraint", 
       1.0, 
       1.0, 
-      midCliffSize, 
-      midCliffSize);
+      _waterfallCliffSize, 
+      _waterfallCliffSize);
 
    // -------------Define objects
    rmSetStatusText("",0.20);
@@ -396,7 +403,7 @@ void main(void)
 
    // int waterfallLake=rmCreateArea("lake under the waterfall");
    // rmSetAreaSize(waterfallLake, rmXTilesToFraction(5), rmZTilesToFraction(5));
-   // rmSetAreaLocation(waterfallLake, midCliffSize, midCliffSize);
+   // rmSetAreaLocation(waterfallLake, _waterfallCliffSize, _waterfallCliffSize);
    // rmSetAreaWaterType(waterfallLake, "Egyptian Nile");
    // rmSetAreaBaseHeight(waterfallLake, 0.0);
    // rmSetAreaMinBlobs(waterfallLake, 1);
