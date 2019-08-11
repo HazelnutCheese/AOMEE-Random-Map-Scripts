@@ -715,7 +715,7 @@ void main(void)
    // avoid TCs
    int farPredatorID=rmCreateObjectDef("far predator");
    float predatorSpecies=rmRandFloat(0, 1);
-   rmAddObjectDefItem(farPredatorID, "bear", 2, 4.0);    
+   rmAddObjectDefItem(farPredatorID, "bear", 1, 6.0);    
    rmAddObjectDefToClass(farPredatorID, classBonusHuntable);
    rmAddObjectDefConstraint(farPredatorID, avoidHuntable);
    rmAddObjectDefConstraint(farPredatorID, avoidFood);
@@ -723,19 +723,19 @@ void main(void)
    rmAddObjectDefConstraint(farPredatorID, startingSettleConstraint);
    rmSetObjectDefMinDistance(farPredatorID, 40.0);
 	rmSetObjectDefMaxDistance(farPredatorID, sizeL);
-   rmPlaceObjectDefPerPlayer(farPredatorID, false, 2*cNumberNonGaiaPlayers);
+   rmPlaceObjectDefPerPlayer(farPredatorID, false, cNumberNonGaiaPlayers/2);
 
    // non violent hunting
    int bonusHuntableID=rmCreateObjectDef("bonus huntable");
    float bonusChance=rmRandFloat(0, 1);
-   rmAddObjectDefItem(bonusHuntableID, "ram", 3, 2.0);     
+   rmAddObjectDefItem(bonusHuntableID, "ram", 2, 2.0);     
    rmAddObjectDefToClass(bonusHuntableID, classBonusHuntable);
    rmAddObjectDefConstraint(bonusHuntableID, avoidHuntable);
    rmAddObjectDefConstraint(bonusHuntableID, avoidFood);
    rmAddObjectDefConstraint(bonusHuntableID, shortAvoidImpassableLand);
    rmSetObjectDefMinDistance(bonusHuntableID, 40.0);
 	rmSetObjectDefMaxDistance(bonusHuntableID, sizeL);
-   rmPlaceObjectDefPerPlayer(bonusHuntableID, false, 2*cNumberNonGaiaPlayers);
+   rmPlaceObjectDefPerPlayer(bonusHuntableID, false, cNumberNonGaiaPlayers);
 
    // Relics avoid TCs
    int relicID=rmCreateObjectDef("relic");
