@@ -130,8 +130,7 @@ float createPlayerCliffArea(int playerNum=0, int teamNum=0, bool isOddTeam=false
    float nextPlayerOffset = 0.0;
    float playerLayerWidth = 0.0;
 
-   int rampDistTiles = _teamLayerLengthTiles - _playerLayerLengthTiles + 1;
-   //int rampCenteringTiles = _playerLayerWidthTiles / 4;
+   int rampDistTiles = _firstLayerLengthTiles - 7;
 
    if(isOddTeam)
    {
@@ -190,12 +189,15 @@ float createPlayerCliffArea(int playerNum=0, int teamNum=0, bool isOddTeam=false
    int rampID=rmCreateConnection("PlayerRamp_"+playerNum);
    rmAddConnectionToClass(rampID, rmClassID("connection"));
    rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-   rmSetConnectionWidth(rampID, 12, 0);
+   rmSetConnectionWidth(rampID, 8, 0);
    rmSetConnectionHeightBlend(rampID, 0.1);
    rmSetConnectionSmoothDistance(rampID, 1.0);
    rmSetConnectionCoherence(rampID, 0.0);
    rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _playerLayerFloorTexture);
    rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _playerLayerFloorTexture);
+   rmAddConnectionTerrainReplacement(rampID, _baseLayerFloorTexture, _playerLayerFloorTexture);
+   rmAddConnectionTerrainReplacement(rampID, _firstLayerFloorTexture, _playerLayerFloorTexture);
+   rmAddConnectionTerrainReplacement(rampID, _teamLayerFloorTexture, _playerLayerFloorTexture);
    rmAddConnectionArea(rampID, playerAreaId);
    rmAddConnectionArea(rampID, dummy); 
    rmBuildConnection(rampID);
@@ -232,11 +234,6 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    float nextTeamOffset=0.0;
    float playerStartOffset=0.0;
 
-   float rampAimX = 0.0;
-   float rampAimZ = 0.0;
-
-   int rampDistTiles = _firstLayerLengthTiles - _teamLayerLengthTiles - 5;
-
    if(isOddTeam)
    {
       float zTeamSpacing = rmZTilesToFraction(_teamSpacingTiles);
@@ -249,9 +246,6 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
 
       nextTeamOffset = z2Location;
       playerStartOffset = z1Location;
-
-      rampAimX = x2Location - rmXTilesToFraction(rampDistTiles);
-      rampAimZ = z1Location - (rmZTilesToFraction(_teamLayerLengthTiles) / 2);
    }
    else
    {
@@ -265,9 +259,6 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
 
       nextTeamOffset = x2Location;
       playerStartOffset = x1Location;
-
-      rampAimX = x1Location - (rmXTilesToFraction(_teamLayerLengthTiles) / 2);
-      rampAimZ = z2Location - rmZTilesToFraction(rampDistTiles);
    }
 
    int areaConstraint =  rmCreateBoxConstraint(
@@ -281,26 +272,6 @@ float createTeamCliffArea(int teamNum=0, float offset=0.0)
    rmSetAreaLocTeam(areaId, teamNum);
    rmSetTeamArea(teamNum, areaId);
    rmBuildAllAreas();
-
-   int dummy=rmCreateArea("Team Center Dummy"+teamNum);
-   rmSetAreaSize(dummy, 0.00025, 0.00025);
-   rmSetAreaLocation(dummy, rampAimX, rampAimZ);
-   rmSetAreaCoherence(dummy, 1.0);
-   //rmSetAreaTerrainType(dummy, "DirtA");
-   rmBuildAllAreas();
-
-   int rampID=rmCreateConnection("TeamRamp_"+teamNum);
-   rmAddConnectionToClass(rampID, rmClassID("connection"));
-   rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-   rmSetConnectionWidth(rampID, 16, 0);
-   rmSetConnectionHeightBlend(rampID, 0.1);
-   rmSetConnectionSmoothDistance(rampID, 1.0);
-   rmSetConnectionCoherence(rampID, 0.0);
-   rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _teamLayerFloorTexture);
-   rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _teamLayerFloorTexture);
-   rmAddConnectionArea(rampID, areaId);
-   rmAddConnectionArea(rampID, dummy); 
-   rmBuildConnection(rampID);
 
    createPlayersCliffArea(teamNum, playerStartOffset);
    
@@ -331,11 +302,6 @@ void createFirstLayers(bool isRight=false)
    float x2 = 0.0;
    float z2 = 0.0;
 
-   float rampAimX = 0.25;
-   float rampAimZ = 0.25;
-
-   int rampDistTiles = _firstLayerLengthTiles - _teamLayerLengthTiles - 5;
-
    if(isRight)
    {
       x1 = 1.0-rmXTilesToFraction(_firstLayerLengthTiles);
@@ -362,31 +328,6 @@ void createFirstLayers(bool isRight=false)
    createCliffLayer(areaId, areaConstraint, _firstLayerHeight, _firstLayerCliffTexture, _firstLayerFloorTexture);
    rmSetAreaLocTeam(areaId, 0);
    rmBuildAllAreas();
-
-   int dummy=rmCreateArea("layerCliff Center Dummy"+isRight);
-   rmSetAreaSize(dummy, 0.00025, 0.00025);
-   rmSetAreaLocation(dummy, rampAimX, rampAimZ);
-   rmSetAreaCoherence(dummy, 1.0);
-   rmSetAreaTerrainType(dummy, "DirtA");
-   rmBuildAllAreas();
-
-   int maxNumberOfBaseConnections = cNumberPlayers/2;
-   for(i=0; <maxNumberOfBaseConnections)
-   {
-      int rampID=rmCreateConnection("layerCliffRamp_"+isRight+i);
-      rmAddConnectionToClass(rampID, rmClassID("connection"));
-      rmSetConnectionType(rampID, cConnectAreas, true, 1.0);
-      rmSetConnectionWidth(rampID, 16, 0);
-      rmSetConnectionHeightBlend(rampID, 0.1);
-      rmSetConnectionSmoothDistance(rampID, 1.0);
-      rmSetConnectionPositionVariance(rampID, -1);
-      rmSetConnectionCoherence(rampID, 0.0);
-      rmAddConnectionTerrainReplacement(rampID, "CliffPlainA", _firstLayerFloorTexture);
-      rmAddConnectionTerrainReplacement(rampID, "CliffPlainB", _firstLayerFloorTexture);
-      rmAddConnectionArea(rampID, areaId);
-      rmAddConnectionArea(rampID, dummy); 
-      rmBuildConnection(rampID);
-   }
 }
 
 void main(void)
@@ -433,6 +374,7 @@ void main(void)
 
    // Class Definitions
    int classConnection=rmDefineClass("connection");
+   int classStartingSet=rmDefineClass("starting settlement");
 
    // Define constraints
    rmSetStatusText("",0.10);
@@ -524,35 +466,33 @@ void main(void)
       rmBuildAllAreas();
    }
 
-   for(riverCrossingIteration=2; <4)
-   {
-      int dummyLeft=rmCreateArea("riverCrossDummyLeft"+riverCrossingIteration);
-      rmSetAreaSize(dummyLeft, 0.00025, 0.00025);
-      rmSetAreaLocation(dummyLeft, 0.33, 0.33 * riverCrossingIteration);
-      rmSetAreaCoherence(dummyLeft, 1.0);
-      rmBuildAllAreas();
+   int riverBridgeA=rmCreateArea("riverBridgeA");
+   rmSetAreaSize(riverBridgeA, 0.0175, 0.0175);
+   rmSetAreaLocation(riverBridgeA, 0.4, 0.4);
+   //rmSetAreaWaterType(riverC, _riverType);
+   rmSetAreaBaseHeight(riverBridgeA, 0.0);
+   rmSetAreaMinBlobs(riverBridgeA, 5);
+   rmSetAreaMaxBlobs(riverBridgeA, 15);
+   rmSetAreaMinBlobDistance(riverBridgeA, 5.0);
+   rmSetAreaMaxBlobDistance(riverBridgeA, 25.0);
+   rmSetAreaSmoothDistance(riverBridgeA, 10);
+   rmSetAreaCoherence(riverBridgeA, 0);
+   rmSetAreaTerrainType(riverBridgeA, _baseLayerFloorTexture);
+   rmBuildAllAreas();
 
-      int dummyRight=rmCreateArea("riverCrossDummyRight"+riverCrossingIteration);
-      rmSetAreaSize(dummyRight, 0.00025, 0.00025);
-      rmSetAreaLocation(dummyRight, 0.33 * riverCrossingIteration, 0.33);
-      rmSetAreaCoherence(dummyRight, 1.0);
-      rmBuildAllAreas();
-
-      int riverCrossID=rmCreateConnection("riverCross"+riverCrossingIteration);
-      rmAddConnectionToClass(riverCrossID, rmClassID("connection"));
-      rmSetConnectionType(riverCrossID, cConnectAreas, true, 1.0);
-      rmSetConnectionWidth(riverCrossID, 4 * (cNumberPlayers / 2), 3);
-      rmSetConnectionHeightBlend(riverCrossID, 1.0);
-      rmSetConnectionSmoothDistance(riverCrossID, 1.0);
-      rmSetConnectionCoherence(riverCrossID, 0.5);
-      rmSetConnectionBaseHeight(riverCrossID, 1.0);
-      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyA", _baseLayerFloorTexture);
-      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyB", _baseLayerFloorTexture);
-      rmAddConnectionTerrainReplacement(riverCrossID, "RiverSandyC", _baseLayerFloorTexture);
-      rmAddConnectionArea(riverCrossID, dummyLeft);
-      rmAddConnectionArea(riverCrossID, dummyRight); 
-      rmBuildConnection(riverCrossID);
-   }
+   int riverBridgeB=rmCreateArea("riverBridgeB");
+   rmSetAreaSize(riverBridgeB, 0.0175, 0.0175);
+   rmSetAreaLocation(riverBridgeB, 0.8, 0.8);
+   //rmSetAreaWaterType(riverC, _riverType);
+   rmSetAreaBaseHeight(riverBridgeB, 0.0);
+   rmSetAreaMinBlobs(riverBridgeB, 5);
+   rmSetAreaMaxBlobs(riverBridgeB, 15);
+   rmSetAreaMinBlobDistance(riverBridgeA, 5.0);
+   rmSetAreaMaxBlobDistance(riverBridgeA, 25.0);
+   rmSetAreaSmoothDistance(riverBridgeB, 10);
+   rmSetAreaCoherence(riverBridgeB, 0);
+   rmSetAreaTerrainType(riverBridgeB, _baseLayerFloorTexture);
+   rmBuildAllAreas();
 
    // Terrain
    createFirstLayers(true);
@@ -622,141 +562,52 @@ void main(void)
 	rmAddObjectDefConstraint(farGoldID, stayInCenter);
 	rmPlaceObjectDefPerPlayer(farGoldID, false, rmRandInt(1, 2));
 
-   //
-   int p = 0;
-   int attempt = 0;
-   int id = 0;
-	int closeID = -1;
-	int farID = -1;
-	
-   int classStartingSet=rmDefineClass("starting settlement");
+   int classGaiaSettlements=rmDefineClass("classGaiaSettlements");
+   int gaiaSettlementID=rmCreateObjectDef("gaiaSettlement");
+   rmAddObjectDefItem(gaiaSettlementID, "settlement", 1, 0.0);
+   rmSetObjectDefMinDistance(gaiaSettlementID, 0.0); // needed Boilerplate?
+   rmSetObjectDefMaxDistance(gaiaSettlementID, 0.0); // needed Boilerplate?
+   rmAddObjectDefConstraint(gaiaSettlementID, shortAvoidGold);
+   rmAddObjectDefConstraint(closeChickensID, shortAvoidImpassableLand);
+   rmAddObjectDefConstraint(gaiaSettlementID, avoidAll);
 
-	int TCavoidSettlement = rmCreateTypeDistanceConstraint("TC avoid TC by long distance", "AbstractSettlement", 75.0);
-	int TCavoidStart = rmCreateClassDistanceConstraint("TC avoid starting by long distance", classStartingSet, 75.0);
-	int TCavoidWater = rmCreateTerrainDistanceConstraint("TC avoid water", "Water", true, 30.0);
-	int TCavoidImpassableLand = rmCreateTerrainDistanceConstraint("TC avoid badlands", "land", false, 18.0);
-	
-	id=rmAddFairLoc("Settlement", false, true,  60, 80, 65, 20);
-	rmAddFairLocConstraint(id, TCavoidSettlement);
-	rmAddFairLocConstraint(id, TCavoidImpassableLand);
-	rmAddFairLocConstraint(id, TCavoidStart);
-	
-	if(rmPlaceFairLocs()) 
+   int gaiaSettlementsObjConstraint=rmCreateTypeDistanceConstraint("gaiaSettlements obj", "all", 6.0);
+   int gaiaSettlementsConstraint=rmCreateClassDistanceConstraint("gaiaSettlements v gaiaSettlements", classGaiaSettlements, 60.0);
+   int startingSettleConstraint=rmCreateClassDistanceConstraint("starting settle avoid", classStartingSet, 60.0);
+
+   int gaiaSettlementsFailCount=0;
+   for(i=0; <cNumberPlayers)
    {
-		for(p = 1; <= cNumberNonGaiaPlayers)
+      int gaiaSettlementAreaID=rmCreateArea("gaiaSettlements"+i);
+      rmSetAreaSize(gaiaSettlementAreaID, rmAreaTilesToFraction(10), rmAreaTilesToFraction(10));
+      rmAddAreaConstraint(gaiaSettlementAreaID, avoidConnectionsConstraint);
+      rmAddAreaConstraint(gaiaSettlementAreaID, gaiaSettlementsObjConstraint);
+      rmAddAreaConstraint(gaiaSettlementAreaID, gaiaSettlementsConstraint);
+      rmAddAreaConstraint(gaiaSettlementAreaID, startingSettleConstraint);
+      rmAddAreaConstraint(gaiaSettlementAreaID, avoidImpassableLand);
+      rmAddAreaToClass(gaiaSettlementAreaID, classGaiaSettlements);
+      
+      rmSetAreaMinBlobs(gaiaSettlementAreaID, 1);
+      rmSetAreaMaxBlobs(gaiaSettlementAreaID, 5);
+      rmSetAreaMinBlobDistance(gaiaSettlementAreaID, 16.0);
+      rmSetAreaMaxBlobDistance(gaiaSettlementAreaID, 40.0);
+      rmSetAreaCoherence(gaiaSettlementAreaID, 0.0);
+
+      if(rmBuildArea(gaiaSettlementAreaID)==false)
       {
-         id=rmCreateObjectDef("close settlement"+p);
-         rmAddObjectDefItem(id, "Settlement", 1, 0.0);
-         rmPlaceObjectDefAtLoc(id, p, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0), 1);
-
-         int settleArea = rmCreateArea("settlement area"+p);
-         rmSetAreaLocation(settleArea, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0));
-         rmSetAreaSize(settleArea, 0.015, 0.015);
-         rmBuildArea(settleArea);
-		}
-	} 
-   else 
-   {
-		for(p = 1; <= cNumberNonGaiaPlayers)
+         // Stop trying once we fail 3 times in a row.
+         gaiaSettlementsFailCount++;
+         if(gaiaSettlementsFailCount==3)
+            break;
+      }
+      else
       {
-			closeID=rmCreateObjectDef("close settlement"+p);
-			rmAddObjectDefItem(closeID, "Settlement", 1, 0.0);
-			rmAddObjectDefConstraint(closeID, TCavoidSettlement);
-			rmAddObjectDefConstraint(closeID, TCavoidStart);
-			rmAddObjectDefConstraint(closeID, TCavoidWater);
-			for(attempt = 6; <= 12)
-         {
-				rmPlaceObjectDefAtLoc(closeID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
-				if(rmGetNumberUnitsPlaced(closeID) > 0)
-            {
-					//break;
-				}
-				rmSetObjectDefMaxDistance(closeID, 10*attempt);
-			}
-		}
-	}
-	rmResetFairLocs();
+         gaiaSettlementsFailCount=0;
 
-	id=rmAddFairLoc("Settlement", true, false,  80, 100, 65, 20);
-	rmAddFairLocConstraint(id, TCavoidSettlement);
-	rmAddFairLocConstraint(id, TCavoidImpassableLand);
-	rmAddFairLocConstraint(id, TCavoidWater);
-	rmAddFairLocConstraint(id, TCavoidStart);
-	
-	if(rmPlaceFairLocs()) 
-   {
-		for(p = 1; <= cNumberNonGaiaPlayers)
-      {
-			id=rmCreateObjectDef("far settlement"+p);
-			rmAddObjectDefItem(id, "Settlement", 1, 0.0);
-			rmPlaceObjectDefAtLoc(id, p, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0), 1);
-
-			int settlementArea = rmCreateArea("settlement_area_"+p);
-			rmSetAreaLocation(settlementArea, rmFairLocXFraction(p, 0), rmFairLocZFraction(p, 0));
-			rmSetAreaSize(settlementArea, 0.015, 0.015);	
-			rmBuildArea(settlementArea);
-		}
-	} 
-   else 
-   {
-		farID=rmCreateObjectDef("far settlement"+p);
-		rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
-		rmAddObjectDefConstraint(farID, TCavoidWater);
-		rmAddObjectDefConstraint(farID, TCavoidStart);
-		rmAddObjectDefConstraint(farID, TCavoidSettlement);
-		rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
-		for(attempt = 5; <= 10)
-      {
-			rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
-			if(rmGetNumberUnitsPlaced(farID) > 0)
-         {
-				break;
-			}
-			rmSetObjectDefMaxDistance(farID, 15*attempt);
-		}
-	}
-	rmResetFairLocs();
-		
-	if(cMapSize == 2)
-   {
-		for(p = 1; <= cNumberNonGaiaPlayers)
-      {			
-			farID=rmCreateObjectDef("giant settlement"+p);
-			rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
-			rmAddObjectDefConstraint(farID, TCavoidWater);
-			rmAddObjectDefConstraint(farID, TCavoidStart);
-			rmAddObjectDefConstraint(farID, TCavoidSettlement);
-			rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
-			for(attempt = 5; <= 12)
-         {
-				rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
-				if(rmGetNumberUnitsPlaced(farID) > 0)
-            {
-					break;
-				}
-				rmSetObjectDefMaxDistance(farID, 20*attempt);
-			}
-			
-			farID=rmCreateObjectDef("giant2 settlement"+p);
-			rmAddObjectDefItem(farID, "Settlement", 1, 0.0);
-			rmAddObjectDefConstraint(farID, TCavoidWater);
-			rmAddObjectDefConstraint(farID, TCavoidStart);
-			rmAddObjectDefConstraint(farID, TCavoidSettlement);
-			rmAddObjectDefConstraint(farID, TCavoidImpassableLand);
-			for(attempt = 5; <= 12)
-         {
-				rmPlaceObjectDefAtLoc(farID, p, rmGetPlayerX(p), rmGetPlayerZ(p), 1);
-				if(rmGetNumberUnitsPlaced(farID) > 0)
-            {
-					break;
-				}
-				rmSetObjectDefMaxDistance(farID, 25*attempt);
-			}
-		}
-	}
-
-   //
- 
+         rmPlaceObjectDefAtAreaLoc(gaiaSettlementID, i, gaiaSettlementAreaID, 1);
+      }
+   } 
+   
    //Forest.
    int classForest=rmDefineClass("forest");
    int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
