@@ -375,6 +375,8 @@ void main(void)
    // Class Definitions
    int classConnection=rmDefineClass("connection");
    int classStartingSet=rmDefineClass("starting settlement");
+   int classRiver=rmDefineClass("river");
+   int classBonusHuntable=rmDefineClass("bonus huntable");
 
    // Define constraints
    rmSetStatusText("",0.10);
@@ -403,6 +405,8 @@ void main(void)
       false, 
       1.0);
    int avoidAll=rmCreateTypeDistanceConstraint("avoid all", "all", 6.0);
+   int avoidRiver=rmCreateTerrainDistanceConstraint("near river", "water", true, 5.0);
+   int avoidRiverClass=rmCreateClassDistanceConstraint("river avoid", classRiver, 10.0);
 
 
    // Buildings
@@ -417,7 +421,7 @@ void main(void)
 	int avoidGold=rmCreateTypeDistanceConstraint("avoid gold", "gold", 60.0);
 
    // Food
-   int avoidHerdable=rmCreateTypeDistanceConstraint("avoid herdable", "herdable", 20.0);
+   int avoidHuntable=rmCreateClassDistanceConstraint("huntable avoid", classBonusHuntable, 20.0);
    int avoidFood=rmCreateTypeDistanceConstraint("avoid other food sources", "food", 6.0);
    int avoidFoodFar=rmCreateTypeDistanceConstraint("avoid food by more", "food", 20.0);
    int avoidPredator=rmCreateTypeDistanceConstraint("avoid predator", "animalPredator", 20.0);
@@ -453,6 +457,7 @@ void main(void)
    for(riverIteration=0; <20)
    {
       int riverC=rmCreateArea("riverC"+riverIteration);
+      rmAddAreaToClass(riverC, classRiver);
       rmSetAreaSize(riverC, 0.015, 0.015);
       rmSetAreaLocation(riverC, 0.05*riverIteration, 0.05*riverIteration);
       rmSetAreaWaterType(riverC, _riverType);
@@ -469,7 +474,6 @@ void main(void)
    int riverBridgeA=rmCreateArea("riverBridgeA");
    rmSetAreaSize(riverBridgeA, 0.0175, 0.0175);
    rmSetAreaLocation(riverBridgeA, 0.4, 0.4);
-   //rmSetAreaWaterType(riverC, _riverType);
    rmSetAreaBaseHeight(riverBridgeA, 0.0);
    rmSetAreaMinBlobs(riverBridgeA, 5);
    rmSetAreaMaxBlobs(riverBridgeA, 15);
@@ -504,6 +508,7 @@ void main(void)
    rmAddObjectDefItem(startingSettlementID, "Settlement Level 1", 1, 0.0);
    rmSetObjectDefMinDistance(startingSettlementID, 0.0); // needed Boilerplate?
    rmSetObjectDefMaxDistance(startingSettlementID, 0.0); // needed Boilerplate?
+   rmAddObjectDefToClass(startingSettlementID, classStartingSet);
    rmPlaceObjectDefPerPlayer(startingSettlementID, true);
 
    // towers avoid other towers
@@ -513,6 +518,7 @@ void main(void)
    rmSetObjectDefMaxDistance(startingTowerID, 8.0);
    rmAddObjectDefConstraint(startingTowerID, avoidTower);
    rmAddObjectDefConstraint(startingTowerID, nearAvoidImpassableLand);
+   rmAddObjectDefConstraint(startingTowerID, avoidConnectionsConstraint);
    rmPlaceObjectDefPerPlayer(startingTowerID, true, 4);
 
    // gold avoids gold
@@ -522,7 +528,18 @@ void main(void)
    rmSetObjectDefMaxDistance(startingGoldID, 16.0);
    rmAddObjectDefConstraint(startingGoldID, shortAvoidGold);
    rmAddObjectDefConstraint(startingGoldID, nearAvoidImpassableLand);
+   rmAddObjectDefConstraint(startingGoldID, avoidConnectionsConstraint);
    rmPlaceObjectDefPerPlayer(startingGoldID, true);
+
+   int closeBerriesID=rmCreateObjectDef("close berries");
+   rmAddObjectDefItem(closeBerriesID, "berry bush", rmRandInt(4,6), 4.0);
+   rmSetObjectDefMinDistance(closeBerriesID, 0.0);
+   rmSetObjectDefMaxDistance(closeBerriesID, 20.0);
+   rmAddObjectDefConstraint(closeBerriesID, nearAvoidImpassableLand);
+   rmAddObjectDefConstraint(closeBerriesID, avoidBuildings);
+   rmAddObjectDefConstraint(closeBerriesID, shortAvoidGold);
+   rmAddObjectDefConstraint(closeBerriesID, avoidConnectionsConstraint);
+   rmPlaceObjectDefPerPlayer(closeBerriesID, true);
 
    int closeGoatsID=rmCreateObjectDef("close Goats");
    rmAddObjectDefItem(closeGoatsID, "goat", 2, 2.0);
@@ -540,58 +557,48 @@ void main(void)
    rmAddObjectDefConstraint(closeChickensID, avoidFood);
    rmPlaceObjectDefPerPlayer(closeChickensID, true);
 
-   // gold avoids gold and Settlements
-	int mediumGoldID=rmCreateObjectDef("medium gold");
-	rmAddObjectDefItem(mediumGoldID, "Gold mine", 1, 0.0);
-	rmSetObjectDefMinDistance(mediumGoldID, 55.0);
-	rmSetObjectDefMaxDistance(mediumGoldID, 60.0);
-	rmAddObjectDefConstraint(mediumGoldID, medAvoidGold);
-	//rmAddObjectDefConstraint(mediumGoldID, shortPlayerConstraint);
-	rmAddObjectDefConstraint(mediumGoldID, shortAvoidSettlement);
-	rmAddObjectDefConstraint(mediumGoldID, shortAvoidImpassableLand);
-	rmPlaceObjectDefPerPlayer(mediumGoldID, false);
-
-   int farGoldID=rmCreateObjectDef("far gold");
-	rmAddObjectDefItem(farGoldID, "Gold mine", 1, 0.0);
-	rmSetObjectDefMinDistance(farGoldID, 75.0);
-	rmSetObjectDefMaxDistance(farGoldID, 105.0);
-	rmAddObjectDefConstraint(farGoldID, medAvoidGold);
-	rmAddObjectDefConstraint(farGoldID, shortAvoidSettlement);
-	//rmAddObjectDefConstraint(farGoldID, playerConstraint);
-	rmAddObjectDefConstraint(farGoldID, avoidImpassableLand);
-	rmAddObjectDefConstraint(farGoldID, stayInCenter);
-	rmPlaceObjectDefPerPlayer(farGoldID, false, rmRandInt(1, 2));
-
    int classGaiaSettlements=rmDefineClass("classGaiaSettlements");
    int gaiaSettlementID=rmCreateObjectDef("gaiaSettlement");
    rmAddObjectDefItem(gaiaSettlementID, "settlement", 1, 0.0);
+
+   int gaiaSettlementsConstraint=rmCreateClassDistanceConstraint("gaiaSettlements v gaiaSettlements", classGaiaSettlements, 40.0);
+   int startingSettleConstraint=rmCreateClassDistanceConstraint("starting settle avoid", classStartingSet, 80.0);
+
    rmSetObjectDefMinDistance(gaiaSettlementID, 0.0); // needed Boilerplate?
    rmSetObjectDefMaxDistance(gaiaSettlementID, 0.0); // needed Boilerplate?
-   rmAddObjectDefConstraint(gaiaSettlementID, shortAvoidGold);
-   rmAddObjectDefConstraint(closeChickensID, shortAvoidImpassableLand);
-   rmAddObjectDefConstraint(gaiaSettlementID, avoidAll);
-
-   int gaiaSettlementsObjConstraint=rmCreateTypeDistanceConstraint("gaiaSettlements obj", "all", 6.0);
-   int gaiaSettlementsConstraint=rmCreateClassDistanceConstraint("gaiaSettlements v gaiaSettlements", classGaiaSettlements, 60.0);
-   int startingSettleConstraint=rmCreateClassDistanceConstraint("starting settle avoid", classStartingSet, 60.0);
+   rmAddObjectDefToClass(gaiaSettlementID, classGaiaSettlements);
 
    int gaiaSettlementsFailCount=0;
    for(i=0; <cNumberPlayers)
    {
       int gaiaSettlementAreaID=rmCreateArea("gaiaSettlements"+i);
-      rmSetAreaSize(gaiaSettlementAreaID, rmAreaTilesToFraction(10), rmAreaTilesToFraction(10));
-      rmAddAreaConstraint(gaiaSettlementAreaID, avoidConnectionsConstraint);
-      rmAddAreaConstraint(gaiaSettlementAreaID, gaiaSettlementsObjConstraint);
+
+      rmAddAreaConstraint(gaiaSettlementAreaID, avoidRiverClass);
       rmAddAreaConstraint(gaiaSettlementAreaID, gaiaSettlementsConstraint);
       rmAddAreaConstraint(gaiaSettlementAreaID, startingSettleConstraint);
-      rmAddAreaConstraint(gaiaSettlementAreaID, avoidImpassableLand);
+      rmAddAreaConstraint(gaiaSettlementAreaID, nearAvoidImpassableLand);
       rmAddAreaToClass(gaiaSettlementAreaID, classGaiaSettlements);
       
       rmSetAreaMinBlobs(gaiaSettlementAreaID, 1);
-      rmSetAreaMaxBlobs(gaiaSettlementAreaID, 5);
-      rmSetAreaMinBlobDistance(gaiaSettlementAreaID, 16.0);
-      rmSetAreaMaxBlobDistance(gaiaSettlementAreaID, 40.0);
-      rmSetAreaCoherence(gaiaSettlementAreaID, 0.0);
+      rmSetAreaMaxBlobs(gaiaSettlementAreaID, 1);
+      rmSetAreaMinBlobDistance(gaiaSettlementAreaID, 1.0);
+      rmSetAreaMaxBlobDistance(gaiaSettlementAreaID, 1.0);
+      rmSetAreaCoherence(gaiaSettlementAreaID, 1.0);
+
+      float settlementSizeX = rmXMetersToFraction(6);
+      float settlementSizeZ = rmZMetersToFraction(6);
+
+      rmSetAreaSize(gaiaSettlementAreaID, settlementSizeX, settlementSizeZ);
+      rmSetAreaMinBlobs(gaiaSettlementAreaID, 1);
+      rmSetAreaMaxBlobs(gaiaSettlementAreaID, 1);
+      rmSetAreaMinBlobDistance(gaiaSettlementAreaID, 0.0);
+      rmSetAreaMaxBlobDistance(gaiaSettlementAreaID, 0.0);
+      rmSetAreaCoherence(gaiaSettlementAreaID, 1.0);
+      rmSetAreaTerrainType(gaiaSettlementAreaID, _playerLayerFloorTexture);
+      rmSetAreaCliffType(gaiaSettlementAreaID, _firstLayerCliffTexture);
+      rmSetAreaCliffEdge(gaiaSettlementAreaID, 1.0, 1.0, 0.0, 1.0, 0);
+      rmSetAreaCliffPainting(gaiaSettlementAreaID, true, true, true, 1.5, true);
+      rmSetAreaBaseHeight(gaiaSettlementAreaID, _firstLayerHeight/2);
 
       if(rmBuildArea(gaiaSettlementAreaID)==false)
       {
@@ -603,16 +610,76 @@ void main(void)
       else
       {
          gaiaSettlementsFailCount=0;
+         
 
-         rmPlaceObjectDefAtAreaLoc(gaiaSettlementID, i, gaiaSettlementAreaID, 1);
+         int innerConstraint = rmCreateAreaConstraint("innerConstraint"+i, gaiaSettlementAreaID);
+         int innerGaiaSettlementAreaID=rmCreateArea("innerGaiaSettlements"+i);
+         rmAddAreaConstraint(innerGaiaSettlementAreaID, innerConstraint);
+         rmAddAreaConstraint(innerGaiaSettlementAreaID, nearAvoidImpassableLand);
+
+         rmSetAreaSize(innerGaiaSettlementAreaID, settlementSizeX/2, settlementSizeZ/2);
+         rmSetAreaMinBlobs(innerGaiaSettlementAreaID, 1);
+         rmSetAreaMaxBlobs(innerGaiaSettlementAreaID, 1);
+         rmSetAreaMinBlobDistance(innerGaiaSettlementAreaID, 0.0);
+         rmSetAreaMaxBlobDistance(innerGaiaSettlementAreaID, 0.0);
+         rmSetAreaCoherence(innerGaiaSettlementAreaID, 1.0);
+         rmSetAreaTerrainType(innerGaiaSettlementAreaID, _playerLayerFloorTexture);
+         rmSetAreaCliffType(innerGaiaSettlementAreaID, _firstLayerCliffTexture);
+         rmSetAreaCliffEdge(innerGaiaSettlementAreaID, 1.0, 1.0, 0.0, 1.0, 0);
+         rmSetAreaCliffPainting(innerGaiaSettlementAreaID, true, true, true, 1.5, true);
+         rmSetAreaBaseHeight(innerGaiaSettlementAreaID, _firstLayerHeight);
+         rmBuildAllAreas();         
+
+         int settlementDummy=rmCreateArea("Settlement Dummy"+i);
+         rmSetAreaSize(settlementDummy, 0.001, 0.001);
+         rmSetAreaLocation(settlementDummy, 0.1 * rmRandInt(0,9), 0.1 * rmRandInt(0,9));
+         rmSetAreaCoherence(settlementDummy, 1.0);
+         rmBuildAllAreas();
+
+         int settlementRampID=rmCreateConnection("SettlementRamp"+i);
+         rmAddConnectionToClass(settlementRampID, classConnection);
+         rmSetConnectionType(settlementRampID, cConnectAreas, true, 1.0);
+         rmSetConnectionWidth(settlementRampID, 4, 0);
+         rmSetConnectionHeightBlend(settlementRampID, 0.1);
+         rmSetConnectionSmoothDistance(settlementRampID, 1.0);
+         rmSetConnectionCoherence(settlementRampID, 0.0);
+         rmAddConnectionTerrainReplacement(settlementRampID, "CliffPlainA", _playerLayerFloorTexture);
+         rmAddConnectionTerrainReplacement(settlementRampID, "CliffPlainB", _playerLayerFloorTexture);
+         rmAddConnectionArea(settlementRampID, gaiaSettlementAreaID);
+         rmAddConnectionArea(settlementRampID, innerGaiaSettlementAreaID);
+         rmAddConnectionArea(settlementRampID, settlementDummy); 
+         rmBuildConnection(settlementRampID);
+
+         rmPlaceObjectDefAtAreaLoc(gaiaSettlementID, i, innerGaiaSettlementAreaID, 1);         
       }
    } 
+
+   // gold avoids gold and Settlements
+	int mediumGoldID=rmCreateObjectDef("medium gold");
+	rmAddObjectDefItem(mediumGoldID, "Gold mine", 1, 0.0);
+	rmSetObjectDefMinDistance(mediumGoldID, 55.0);
+	rmSetObjectDefMaxDistance(mediumGoldID, 60.0);
+	rmAddObjectDefConstraint(mediumGoldID, medAvoidGold);
+   rmAddObjectDefConstraint(mediumGoldID, avoidConnectionsConstraint);
+	rmAddObjectDefConstraint(mediumGoldID, shortAvoidSettlement);
+	rmAddObjectDefConstraint(mediumGoldID, shortAvoidImpassableLand);
+	rmPlaceObjectDefPerPlayer(mediumGoldID, false);
+
+   int farGoldID=rmCreateObjectDef("far gold");
+	rmAddObjectDefItem(farGoldID, "Gold mine", 1, 0.0);
+	rmSetObjectDefMinDistance(farGoldID, 105.0);
+	rmSetObjectDefMaxDistance(farGoldID, sizeL);
+	rmAddObjectDefConstraint(farGoldID, medAvoidGold);
+	rmAddObjectDefConstraint(farGoldID, shortAvoidSettlement);
+   rmAddObjectDefConstraint(farGoldID, avoidConnectionsConstraint);
+	rmAddObjectDefConstraint(farGoldID, avoidImpassableLand);
+	rmAddObjectDefConstraint(farGoldID, stayInCenter);
+	rmPlaceObjectDefPerPlayer(farGoldID, false, rmRandInt(1, 2));
    
    //Forest.
    int classForest=rmDefineClass("forest");
    int forestObjConstraint=rmCreateTypeDistanceConstraint("forest obj", "all", 6.0);
-   int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", rmClassID("forest"), 15.0);
-   //int forestSettleConstraint=rmCreateClassDistanceConstraint("forest settle", rmClassID("starting settlement"), 20.0);
+   int forestConstraint=rmCreateClassDistanceConstraint("forest v forest", classForest, 15.0);
    int failCount=0;
    int numTries=10*cNumberNonGaiaPlayers;
    for(i=0; <numTries)
@@ -643,6 +710,42 @@ void main(void)
       else
          failCount=0;
    } 
+
+   // pick wolf or bears as predators
+   // avoid TCs
+   int farPredatorID=rmCreateObjectDef("far predator");
+   float predatorSpecies=rmRandFloat(0, 1);
+   rmAddObjectDefItem(farPredatorID, "bear", 2, 4.0);    
+   rmAddObjectDefToClass(farPredatorID, classBonusHuntable);
+   rmAddObjectDefConstraint(farPredatorID, avoidHuntable);
+   rmAddObjectDefConstraint(farPredatorID, avoidFood);
+   rmAddObjectDefConstraint(farPredatorID, shortAvoidImpassableLand);
+   rmAddObjectDefConstraint(farPredatorID, startingSettleConstraint);
+   rmSetObjectDefMinDistance(farPredatorID, 40.0);
+	rmSetObjectDefMaxDistance(farPredatorID, sizeL);
+   rmPlaceObjectDefPerPlayer(farPredatorID, false, 2*cNumberNonGaiaPlayers);
+
+   // non violent hunting
+   int bonusHuntableID=rmCreateObjectDef("bonus huntable");
+   float bonusChance=rmRandFloat(0, 1);
+   rmAddObjectDefItem(bonusHuntableID, "ram", 3, 2.0);     
+   rmAddObjectDefToClass(bonusHuntableID, classBonusHuntable);
+   rmAddObjectDefConstraint(bonusHuntableID, avoidHuntable);
+   rmAddObjectDefConstraint(bonusHuntableID, avoidFood);
+   rmAddObjectDefConstraint(bonusHuntableID, shortAvoidImpassableLand);
+   rmSetObjectDefMinDistance(bonusHuntableID, 40.0);
+	rmSetObjectDefMaxDistance(bonusHuntableID, sizeL);
+   rmPlaceObjectDefPerPlayer(bonusHuntableID, false, 2*cNumberNonGaiaPlayers);
+
+   // Relics avoid TCs
+   int relicID=rmCreateObjectDef("relic");
+   rmAddObjectDefItem(relicID, "relic", 1, 0.0);
+   rmAddObjectDefConstraint(relicID, rmCreateTypeDistanceConstraint("relic vs relic", "relic", 60.0));
+   rmAddObjectDefConstraint(relicID, avoidImpassableLand);
+   rmAddObjectDefConstraint(relicID, startingSettleConstraint);
+   rmSetObjectDefMinDistance(relicID, 40.0);
+	rmSetObjectDefMaxDistance(relicID, sizeL);
+   rmPlaceObjectDefPerPlayer(relicID, false, 1);
 
    // Fish
    int fishVsFishID=rmCreateTypeDistanceConstraint("fish v fish", "fish", 22.0);
